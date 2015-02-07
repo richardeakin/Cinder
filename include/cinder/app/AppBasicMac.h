@@ -82,14 +82,14 @@ void AppBasicMac::main( const char *title, int argc, char * const argv[], const 
 
 	if( settingsFn )
 		settingsFn( &settings );
-
 	if( settings.shouldQuit() )
 		return;
 
 	AppBasic *app = new AppT;
-	#pragma unused( app )
-
 	AppBase::executeLaunch( title, argc, argv );
+	if( ! settings.isFastShutdownEnabled() )
+		delete app;
+
 	AppBase::cleanupLaunch();
 }
 

@@ -48,6 +48,7 @@ static std::thread::id		sPrimaryThreadId = std::this_thread::get_id();
 AppBase::Settings::Settings()
 {
 	mShouldQuit = false;
+	mFastShutdown = false;
 	mPowerManagement = false;
 	mFrameRateEnabled = true;
 	mFrameRate = 60.0f;

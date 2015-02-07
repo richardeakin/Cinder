@@ -195,6 +195,11 @@ class AppBase {
 		//! Maximum frameRate of the application specified in frames per second
 		float	getFrameRate() const { return mFrameRate; }
 
+		//! Sets whether the app will try to shutdown as fast as possible or not. If true, not all memory will be freed during the shutdown process, such as the application itself. \default false.
+		void	setFastShutdownEnabled( bool enable = true )	{ mFastShutdown = enable; }
+		//! Returns whether the app will try to shutdown as fast as possible or not. If true, not all memory will be freed during the shutdown process, such as the application itself. \default false.
+		bool	isFastShutdownEnabled() const					{ return mFastShutdown; }
+
 		//! Whether or not the app should terminate prior to launching
 		bool	shouldQuit() const			{ return mShouldQuit; }
 
@@ -213,6 +218,9 @@ class AppBase {
 		bool			mEnableHighDensityDisplay;
 		bool			mEnableMultiTouch;
 		bool			mShouldQuit; // defaults to false, facilitates early termination
+
+	  private:
+		bool mFastShutdown;
 
 		friend AppBase;
 	};
