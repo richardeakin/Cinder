@@ -253,7 +253,7 @@ void VertBatch::clear()
 	mNormals.clear();
 	mColors.clear();
 	mTexCoords.clear();
-	mVbo.reset();
+//	mVbo.reset();
 	mVao.reset();
 }
 
@@ -293,7 +293,8 @@ void VertBatch::setupBuffers()
 	
 	ScopedBuffer ScopedBuffer( mVbo );
 	// if this VBO was freshly made, or we don't own the buffer because we use the context defaults
-	if( forceUpload || ( ! mOwnsBuffers ) ) {
+//	if( forceUpload || ( ! mOwnsBuffers ) ) {
+	if( true ) {
 		mVbo->ensureMinimumSize( totalSizeBytes );
 		
 		// upload positions
