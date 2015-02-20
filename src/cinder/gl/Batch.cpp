@@ -254,7 +254,7 @@ void VertBatch::clear()
 	mColors.clear();
 	mTexCoords.clear();
 //	mVbo.reset();
-	mVao.reset();
+//	mVao.reset();
 }
 
 void VertBatch::draw()
@@ -326,8 +326,10 @@ void VertBatch::setupBuffers()
 	if( ! mOwnsBuffers )
 		mVao->replacementBindBegin();
 	else {
-		mVao = gl::Vao::create();
-		mVao->bind();
+		if( ! mVao )
+			mVao = gl::Vao::create();
+		
+		mVao->bind(); // TODO: is this necessary? couldn't it be a pushBind()?
 	}
 
 	gl::ScopedBuffer vboScope( mVbo );
