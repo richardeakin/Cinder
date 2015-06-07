@@ -301,19 +301,25 @@ void DeviceManagerCoreAudio::registerPropertyListeners( DeviceRef device, ::Audi
 	dispatch_queue_t currentQueue = dispatch_get_current_queue();
 
 	// data source (ex. internal speakers, headphones)
-	::AudioObjectPropertyAddress dataSourceAddress = getAudioObjectPropertyAddress( kAudioDevicePropertyDataSource, kAudioDevicePropertyScopeOutput );
-	OSStatus status = ::AudioObjectAddPropertyListenerBlock( deviceId, &dataSourceAddress, currentQueue, listenerBlock );
-	CI_VERIFY( status == noErr );
+	{
+		::AudioObjectPropertyAddress propertyAddress = getAudioObjectPropertyAddress( kAudioDevicePropertyDataSource, kAudioDevicePropertyScopeOutput );
+		OSStatus status = ::AudioObjectAddPropertyListenerBlock( deviceId, &propertyAddress, currentQueue, listenerBlock );
+		CI_VERIFY( status == noErr );
+	}
 
 	// device samplerate
-	::AudioObjectPropertyAddress samplerateAddress = getAudioObjectPropertyAddress( kAudioDevicePropertyNominalSampleRate );
-	status = ::AudioObjectAddPropertyListenerBlock( deviceId, &samplerateAddress, currentQueue, listenerBlock );
-	CI_VERIFY( status == noErr );
+	{
+		::AudioObjectPropertyAddress propertyAddress = getAudioObjectPropertyAddress( kAudioDevicePropertyNominalSampleRate );
+		OSStatus status = ::AudioObjectAddPropertyListenerBlock( deviceId, &propertyAddress, currentQueue, listenerBlock );
+		CI_VERIFY( status == noErr );
+	}
 
 	// frames per block
-	::AudioObjectPropertyAddress frameSizeAddress = getAudioObjectPropertyAddress( kAudioDevicePropertyBufferFrameSize );
-	status = ::AudioObjectAddPropertyListenerBlock( deviceId, &frameSizeAddress, currentQueue, listenerBlock );
-	CI_VERIFY( status == noErr );
+	{
+		::AudioObjectPropertyAddress propertyAddress = getAudioObjectPropertyAddress( kAudioDevicePropertyBufferFrameSize );
+		OSStatus status = ::AudioObjectAddPropertyListenerBlock( deviceId, &propertyAddress, currentQueue, listenerBlock );
+		CI_VERIFY( status == noErr );
+	}
 
 	if( isOutput )
 		mOutputDeviceListenerBlock = Block_copy( listenerBlock );
