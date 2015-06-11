@@ -49,6 +49,7 @@ Device::Device( const std::string &key )
 	: mKey( key ), mSampleRate( 0 ), mFramesPerBlock( 0 ), mDefault( false )
 {}
 
+// static
 DeviceRef Device::getDefaultOutput()
 {
 	auto result = Context::deviceManager()->getDefaultOutput();
@@ -56,6 +57,7 @@ DeviceRef Device::getDefaultOutput()
 	return result;
 }
 
+// static
 DeviceRef Device::getDefaultInput()
 {
 	auto result = Context::deviceManager()->getDefaultInput();
@@ -63,21 +65,25 @@ DeviceRef Device::getDefaultInput()
 	return result;
 }
 
+// static
 DeviceRef Device::findDeviceByName( const string &name )
 {
 	return Context::deviceManager()->findDeviceByName( name );
 }
 
+// static
 DeviceRef Device::findDeviceByKey( const string &key )
 {
 	return Context::deviceManager()->findDeviceByKey( key );
 }
 
+// static
 const vector<DeviceRef>& Device::getDevices()
 {
 	return Context::deviceManager()->getDevices();
 }
 
+// static
 vector<DeviceRef> Device::getOutputDevices()
 {
 	vector<DeviceRef> result;
@@ -89,6 +95,7 @@ vector<DeviceRef> Device::getOutputDevices()
 	return result;
 }
 
+// static
 vector<DeviceRef> Device::getInputDevices()
 {
 	vector<DeviceRef> result;
