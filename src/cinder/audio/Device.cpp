@@ -107,6 +107,24 @@ vector<DeviceRef> Device::getInputDevices()
 	return result;
 }
 
+// static
+signals::Signal<void()>& Device::getSignalDefaultOutputChanged()
+{
+	return Context::deviceManager()->getSignalDefaultOutputChanged();
+}
+
+// static
+signals::Signal<void()>& Device::getSignalDefaultInputChanged()
+{
+	return Context::deviceManager()->getSignalDefaultInputChanged();
+}
+
+// static
+signals::Signal<void()>& Device::getSignalDevicesChanged()
+{
+	return Context::deviceManager()->getSignalDevicesChanged();
+}
+
 const string& Device::getName()
 {
 	if( mName.empty() )

@@ -422,24 +422,24 @@ void DeviceManagerCoreAudio::unregisterDevicesChangedListeners()
 // static
 OSStatus DeviceManagerCoreAudio::devicesChangedCallback( AudioObjectID inObjectID, UInt32 inNumberAddresses, const AudioObjectPropertyAddress inAddresses[], void *inClientData )
 {
-	for( UInt32 i = 0; i < inNumberAddresses; i++ ) {
+	DeviceManagerCoreAudio *deviceManager = (DeviceManagerCoreAudio *)inClientData;
 
+	for( UInt32 i = 0; i < inNumberAddresses; i++ ) {
 		switch( inAddresses[i].mSelector ) {
 			case kAudioHardwarePropertyDefaultInputDevice:
-				CI_LOG_V( "default input device changed" );
-				break;
+				deviceManager->mSignalDefaultInputChanged.emit();
+			break;
 			case kAudioHardwarePropertyDefaultOutputDevice:
-				CI_LOG_V( "default output device changed" );
-				break;
-			case kAudioHardwarePropertyDefaultSystemOutputDevice:
-				CI_LOG_V( "default system output device changed" );
-				break;
+				deviceManager->mSignalDefaultOutputChanged.emit();
+			break;
+//			case kAudioHardwarePropertyDefaultSystemOutputDevice:
+//			break;
 			case kAudioHardwarePropertyDevices:
-				CI_LOG_V( "kAudioHardwarePropertyDevices" );
-				break;
+				deviceManager->mSignalDevicesChanged.emit();
+			break;
 			default:
-				CI_LOG_V( "unknown message" );
-				break;
+				//CI_LOG_V( "unhandled property change" );
+			break;
 		}
 	}
 	return noErr;

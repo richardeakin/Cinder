@@ -99,6 +99,13 @@ class Device : public std::enable_shared_from_this<Device>, Noncopyable {
 	//! Returns a signal that notifies connected slots after the format of this Device has changed. This can occur from a call to updateFormat() or by the system.
 	signals::Signal<void()>& getSignalParamsDidChange()		{ return mSignalParamsDidChange; }
 
+	//! Returns a signal that notifies when the default output has changed.
+	static signals::Signal<void()>& getSignalDefaultOutputChanged();
+	//! Returns a signal that notifies when the default input has changed.
+	static signals::Signal<void()>& getSignalDefaultInputChanged();
+	//! Returns a signal that notifies when a device has been added or removed.
+	static signals::Signal<void()>& getSignalDevicesChanged();
+
 	//! Returns a string representation of all devices for debugging purposes.
 	static std::string printDevicesToString();
 
@@ -137,6 +144,13 @@ class DeviceManager : private Noncopyable {
 	//! override if subclass needs to update params async, and will issue formatWillChange callbacks
 	virtual bool			isFormatUpdatedAsync() const		{ return false; }
 
+	//! Returns a signal that notifies when the default output has changed.
+	signals::Signal<void()>& getSignalDefaultOutputChanged()	{ return mSignalDefaultOutputChanged; }
+	//! Returns a signal that notifies when the default input has changed.
+	signals::Signal<void()>& getSignalDefaultInputChanged()		{ return mSignalDefaultInputChanged; }
+	//! Returns a signal that notifies when a device has been added or removed.
+	signals::Signal<void()>& getSignalDevicesChanged()			{ return mSignalDevicesChanged; }
+
   protected:
 	DeviceManager()	{}
 
@@ -145,7 +159,8 @@ class DeviceManager : private Noncopyable {
 	void emitParamsWillChange( const DeviceRef &device );
 	void emitParamsDidChange( const DeviceRef &device );
 
-	std::vector<DeviceRef> mDevices;
+	std::vector<DeviceRef>		mDevices;
+	signals::Signal<void()>		mSignalDefaultOutputChanged, mSignalDefaultInputChanged, mSignalDevicesChanged;
 };
 
 } } // namespace cinder::audio

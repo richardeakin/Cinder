@@ -47,6 +47,8 @@ class DeviceTestApp : public App {
 	void processDrag( ivec2 pos );
 	void keyDown( KeyEvent event );
 
+	void updateDevicesList();
+
 	audio::InputDeviceNodeRef		mInputDeviceNode;
 	audio::OutputDeviceNodeRef		mOutputDeviceNode;
 	audio::MonitorNodeRef			mMonitor;
@@ -84,6 +86,20 @@ void DeviceTestApp::setup()
 //	setupMultiChannelDeviceWindows( "MOTU Analog (MOTU Audio Wave for 64 bit)" );
 
 	setupUI();
+
+	auto deviceManager = audio::Context::deviceManager();
+	deviceManager->getSignalDefaultInputChanged().connect( [this] {
+		CI_LOG_V( "default input changed" );
+		updateDevicesList();
+	} );
+	deviceManager->getSignalDefaultOutputChanged().connect( [this] {
+		CI_LOG_V( "default output changed" );
+		updateDevicesList();
+	} );
+	deviceManager->getSignalDevicesChanged().connect( [this] {
+		CI_LOG_V( "devices changed" );
+		updateDevicesList();
+	} );
 
 	CI_LOG_V( "complete. Context samplerate: " << ctx->getSampleRate() );
 }
@@ -315,35 +331,13 @@ void DeviceTestApp::setupUI()
 
 	mOutputSelector.mTitle = "Output Devices";
 	mOutputSelector.mBounds = Rectf( mTestSelector.mBounds.x1, getWindowCenter().y + 40, (float)getWindowWidth(), (float)getWindowHeight() );
-	if( mOutputDeviceNode ) {
-		for( const auto &dev : audio::Device::getOutputDevices() ) {
-			if( dev == mOutputDeviceNode->getDevice() )
-				mOutputSelector.mCurrentSectionIndex = mOutputSelector.mSegments.size();
-
-			string devName = dev->getName();
-			if( dev->isDefault() )
-				devName += DEFAULT_DEVICE_TAG;
-
-			mOutputSelector.mSegments.push_back( devName );
-		}
-	}
 	mWidgets.push_back( &mOutputSelector );
 
 	mInputSelector.mTitle = "Input Devices";
 	mInputSelector.mBounds = mOutputSelector.mBounds - vec2( mOutputSelector.mBounds.getWidth() + 10, 0 );
-	if( mOutputDeviceNode ) {
-		for( const auto &dev : audio::Device::getInputDevices() ) {
-			if( dev == mInputDeviceNode->getDevice() )
-				mInputSelector.mCurrentSectionIndex = mInputSelector.mSegments.size();
-
-			string devName = dev->getName();
-			if( dev->isDefault() )
-				devName += DEFAULT_DEVICE_TAG;
-
-			mInputSelector.mSegments.push_back( devName );
-		}
-	}
 	mWidgets.push_back( &mInputSelector );
+
+	updateDevicesList();
 
 	Rectf textInputBounds( 0, getWindowCenter().y + 40, 200, getWindowCenter().y + 70  );
 	mSamplerateInput.mBounds = textInputBounds;
@@ -396,6 +390,35 @@ void DeviceTestApp::setupUI()
 #endif
 
 	gl::enableAlphaBlending();
+}
+
+void DeviceTestApp::updateDevicesList()
+{
+	// outputs
+	mOutputSelector.mSegments.clear();
+	for( const auto &dev : audio::Device::getOutputDevices() ) {
+		if( mOutputDeviceNode && dev == mOutputDeviceNode->getDevice() )
+			mOutputSelector.mCurrentSectionIndex = mOutputSelector.mSegments.size();
+
+		string devName = dev->getName();
+		if( dev->isDefault() )
+			devName += DEFAULT_DEVICE_TAG;
+
+		mOutputSelector.mSegments.push_back( devName );
+	}
+
+	// inputs
+	mInputSelector.mSegments.clear();
+	for( const auto &dev : audio::Device::getInputDevices() ) {
+		if( mInputDeviceNode && dev == mInputDeviceNode->getDevice() )
+			mInputSelector.mCurrentSectionIndex = mInputSelector.mSegments.size();
+
+		string devName = dev->getName();
+		if( dev->isDefault() )
+			devName += DEFAULT_DEVICE_TAG;
+
+		mInputSelector.mSegments.push_back( devName );
+	}
 }
 
 void DeviceTestApp::processDrag( ivec2 pos )
