@@ -45,14 +45,22 @@ namespace cinder { namespace audio {
 // MARK: - Device
 // ----------------------------------------------------------------------------------------------------
 
+Device::Device( const std::string &key )
+	: mKey( key ), mSampleRate( 0 ), mFramesPerBlock( 0 ), mDefault( false )
+{}
+
 DeviceRef Device::getDefaultOutput()
 {
-	return Context::deviceManager()->getDefaultOutput();
+	auto result = Context::deviceManager()->getDefaultOutput();
+	result->mDefault = true;
+	return result;
 }
 
 DeviceRef Device::getDefaultInput()
 {
-	return Context::deviceManager()->getDefaultInput();
+	auto result = Context::deviceManager()->getDefaultInput();
+	result->mDefault = true;
+	return result;
 }
 
 DeviceRef Device::findDeviceByName( const string &name )

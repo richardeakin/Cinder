@@ -13,11 +13,13 @@
 
 #include "../../common/AudioTestGui.h"
 
-// TODO: check iOS 6+ interruption handlers via notification
+#include <boost/algorithm/string.hpp>
 
 using namespace ci;
 using namespace ci::app;
 using namespace std;
+
+const string DEFAULT_DEVICE_TAG = " [def.]";
 
 class DeviceTestApp : public App {
   public:
@@ -64,7 +66,7 @@ class DeviceTestApp : public App {
 
 void DeviceTestApp::setup()
 {
-	console() << audio::Device::printDevicesToString();
+	CI_LOG_V( "All Devices:\n" << audio::Device::printDevicesToString() << "---------------------" );
 
 	auto ctx = audio::master();
 
@@ -81,11 +83,9 @@ void DeviceTestApp::setup()
 	//setupMultiChannelDevice( "PreSonus FIREPOD (1431)" );
 //	setupMultiChannelDeviceWindows( "MOTU Analog (MOTU Audio Wave for 64 bit)" );
 
-	PRINT_GRAPH( ctx );
-
 	setupUI();
 
-	CI_LOG_V( "Context samplerate: " << ctx->getSampleRate() );
+	CI_LOG_V( "complete. Context samplerate: " << ctx->getSampleRate() );
 }
 
 void DeviceTestApp::setOutputDevice( const audio::DeviceRef &device, size_t numChannels )
@@ -319,7 +319,12 @@ void DeviceTestApp::setupUI()
 		for( const auto &dev : audio::Device::getOutputDevices() ) {
 			if( dev == mOutputDeviceNode->getDevice() )
 				mOutputSelector.mCurrentSectionIndex = mOutputSelector.mSegments.size();
-			mOutputSelector.mSegments.push_back( dev->getName() );
+
+			string devName = dev->getName();
+			if( dev->isDefault() )
+				devName += DEFAULT_DEVICE_TAG;
+
+			mOutputSelector.mSegments.push_back( devName );
 		}
 	}
 	mWidgets.push_back( &mOutputSelector );
@@ -330,7 +335,12 @@ void DeviceTestApp::setupUI()
 		for( const auto &dev : audio::Device::getInputDevices() ) {
 			if( dev == mInputDeviceNode->getDevice() )
 				mInputSelector.mCurrentSectionIndex = mInputSelector.mSegments.size();
-			mInputSelector.mSegments.push_back( dev->getName() );
+
+			string devName = dev->getName();
+			if( dev->isDefault() )
+				devName += DEFAULT_DEVICE_TAG;
+
+			mInputSelector.mSegments.push_back( devName );
 		}
 	}
 	mWidgets.push_back( &mInputSelector );
@@ -424,10 +434,12 @@ void DeviceTestApp::processTap( ivec2 pos )
 		setupTest( currentTest );
 		return;
 	}
-
 	size_t currentOutputIndex = mOutputSelector.mCurrentSectionIndex;
 	if( mOutputSelector.hitTest( pos ) && currentOutputIndex != mOutputSelector.mCurrentSectionIndex ) {
-		auto dev = audio::Device::findDeviceByName( mOutputSelector.mSegments[mOutputSelector.mCurrentSectionIndex] );
+		string selectedName = mOutputSelector.mSegments[mOutputSelector.mCurrentSectionIndex];
+		boost::replace_all( selectedName, DEFAULT_DEVICE_TAG, "" );
+
+		auto dev = audio::Device::findDeviceByName( selectedName );
 		CI_LOG_V( "selected output device named: " << dev->getName() << ", key: " << dev->getKey() );
 
 		setOutputDevice( dev );
@@ -436,7 +448,10 @@ void DeviceTestApp::processTap( ivec2 pos )
 
 	size_t currentInputIndex = mInputSelector.mCurrentSectionIndex;
 	if( mInputSelector.hitTest( pos ) && currentInputIndex != mInputSelector.mCurrentSectionIndex ) {
-		auto dev = audio::Device::findDeviceByName( mInputSelector.mSegments[mInputSelector.mCurrentSectionIndex] );
+		string selectedName = mInputSelector.mSegments[mInputSelector.mCurrentSectionIndex];
+		boost::replace_all( selectedName, DEFAULT_DEVICE_TAG, "" );
+
+		auto dev = audio::Device::findDeviceByName( selectedName );
 		CI_LOG_V( "selected input named: " << dev->getName() << ", key: " << dev->getKey() );
 
 		setInputDevice( dev );

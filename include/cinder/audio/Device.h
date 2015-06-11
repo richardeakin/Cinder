@@ -67,6 +67,13 @@ class Device : public std::enable_shared_from_this<Device>, Noncopyable {
 	//! Returns the current frames per block.
 	size_t getFramesPerBlock();
 
+	//! \brief Returns whether this Device was aquired as a default device
+	//!
+	//! The default Device is treated with special care, as it may change when for example the user
+	//! selects a new audio device as default in the OS's settings. You retrieve a default device with
+	//! either getDefaultOutput() or getDefaultInput().
+	bool isDefault() const		{ return mDefault; }
+
 	//! Defines the format parameters that are settable when passed in with updateFormat()
 	struct Format {
 		Format() : mSampleRate( 0 ), mFramesPerBlock( 0 ) {}
@@ -96,11 +103,12 @@ class Device : public std::enable_shared_from_this<Device>, Noncopyable {
 	static std::string printDevicesToString();
 
   private:
-	Device( const std::string &key ) : mKey( key ), mSampleRate( 0 ), mFramesPerBlock( 0 ) {}
+	Device( const std::string &key );
 
-	std::string mKey, mName;
-	size_t mSampleRate, mFramesPerBlock;
-	signals::Signal<void()> mSignalParamsWillChange, mSignalParamsDidChange;
+	std::string					mKey, mName;
+	size_t						mSampleRate, mFramesPerBlock;
+	bool						mDefault;
+	signals::Signal<void()>		mSignalParamsWillChange, mSignalParamsDidChange;
 
 	friend class DeviceManager;
 };

@@ -25,6 +25,7 @@
 #include "cinder/cocoa/CinderCocoa.h"
 #include "cinder/audio/Exception.h"
 #include "cinder/CinderAssert.h"
+#include "cinder/Log.h"
 
 using namespace std;
 using namespace ci;
@@ -134,6 +135,11 @@ vector<PropT> getAudioObjectPropertyVector( ::AudioObjectID objectId, ::AudioObj
 DeviceManagerCoreAudio::DeviceManagerCoreAudio()
 	: mUserHasModifiedFormat( false )
 {
+}
+
+DeviceManagerCoreAudio::~DeviceManagerCoreAudio()
+{
+	unregisterDevicesChangedListeners();
 }
 
 DeviceRef DeviceManagerCoreAudio::getDefaultOutput()
@@ -354,13 +360,89 @@ const vector<DeviceRef>& DeviceManagerCoreAudio::getDevices()
 {
 	if( mDevices.empty() ) {
 		auto deviceIds = getAudioObjectPropertyVector<::AudioObjectID>( kAudioObjectSystemObject, kAudioHardwarePropertyDevices );
-		for ( ::AudioDeviceID &deviceId : deviceIds ) {
+		for( ::AudioDeviceID &deviceId : deviceIds ) {
 			string key = keyForDeviceId( deviceId );
 			auto device = addDevice( key );
 			mDeviceIds.insert( { device, deviceId } );
 		}
+
+		registerDevicesChangedListeners();
 	}
 	return mDevices;
+}
+
+void DeviceManagerCoreAudio::registerDevicesChangedListeners()
+{
+	// add listener for devices added or removed
+	{
+		AudioObjectPropertyAddress propertyAddress = { kAudioHardwarePropertyDevices, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
+		OSStatus status = ::AudioObjectAddPropertyListener( kAudioObjectSystemObject, &propertyAddress, DeviceManagerCoreAudio::devicesChangedCallback, this );
+		CI_VERIFY( status == noErr );
+	}
+
+	// add listener for default output device changed
+	{
+		AudioObjectPropertyAddress propertyAddress = { kAudioHardwarePropertyDefaultOutputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
+		OSStatus status = ::AudioObjectAddPropertyListener( kAudioObjectSystemObject, &propertyAddress, DeviceManagerCoreAudio::devicesChangedCallback, this );
+		CI_VERIFY( status == noErr );
+	}
+
+	// add listener for default input device changed
+	{
+		AudioObjectPropertyAddress propertyAddress = { kAudioHardwarePropertyDefaultInputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
+		OSStatus status = ::AudioObjectAddPropertyListener( kAudioObjectSystemObject, &propertyAddress, DeviceManagerCoreAudio::devicesChangedCallback, this );
+		CI_VERIFY( status == noErr );
+	}
+}
+
+void DeviceManagerCoreAudio::unregisterDevicesChangedListeners()
+{
+	// remove listener for devices added or removed
+	{
+		AudioObjectPropertyAddress propertyAddress = { kAudioHardwarePropertyDevices, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
+		OSStatus status = ::AudioObjectRemovePropertyListener( kAudioObjectSystemObject, &propertyAddress, DeviceManagerCoreAudio::devicesChangedCallback, this );
+		CI_VERIFY( status == noErr );
+	}
+
+	// remove listener for default output device changed
+	{
+		AudioObjectPropertyAddress propertyAddress = { kAudioHardwarePropertyDefaultOutputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
+		OSStatus status = ::AudioObjectRemovePropertyListener( kAudioObjectSystemObject, &propertyAddress, DeviceManagerCoreAudio::devicesChangedCallback, this );
+		CI_VERIFY( status == noErr );
+	}
+
+	// remove listener for default input device changed
+	{
+		AudioObjectPropertyAddress propertyAddress = { kAudioHardwarePropertyDefaultInputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
+		OSStatus status = ::AudioObjectRemovePropertyListener( kAudioObjectSystemObject, &propertyAddress, DeviceManagerCoreAudio::devicesChangedCallback, this );
+		CI_VERIFY( status == noErr );
+	}
+}
+
+// static
+OSStatus DeviceManagerCoreAudio::devicesChangedCallback( AudioObjectID inObjectID, UInt32 inNumberAddresses, const AudioObjectPropertyAddress inAddresses[], void *inClientData )
+{
+	for( UInt32 i = 0; i < inNumberAddresses; i++ ) {
+
+		switch( inAddresses[i].mSelector ) {
+			case kAudioHardwarePropertyDefaultInputDevice:
+				CI_LOG_V( "default input device changed" );
+				break;
+			case kAudioHardwarePropertyDefaultOutputDevice:
+				CI_LOG_V( "default output device changed" );
+				break;
+			case kAudioHardwarePropertyDefaultSystemOutputDevice:
+				CI_LOG_V( "default system output device changed" );
+				break;
+			case kAudioHardwarePropertyDevices:
+				CI_LOG_V( "kAudioHardwarePropertyDevices" );
+				break;
+			default:
+				CI_LOG_V( "unknown message" );
+				break;
+		}
+	}
+	return noErr;
 }
 
 vector<size_t> DeviceManagerCoreAudio::getAcceptableSampleRates( ::AudioDeviceID deviceId )
