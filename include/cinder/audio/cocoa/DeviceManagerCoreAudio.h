@@ -41,6 +41,7 @@ class DeviceManagerCoreAudio : public DeviceManager {
 	DeviceRef getDefaultInput()													override;
 
 	std::string getName( const DeviceRef &device )								override;
+	std::string getSourceName( const DeviceRef &device )						override;
 	size_t getNumInputChannels( const DeviceRef &device )						override;
 	size_t getNumOutputChannels( const DeviceRef &device )						override;
 	size_t getSampleRate( const DeviceRef &device )								override;

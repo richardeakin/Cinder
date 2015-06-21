@@ -138,6 +138,14 @@ const string& Device::getKey()
 	return mKey;
 }
 
+const std::string& Device::getSourceName()
+{
+	if( mSourceName.empty() )
+		mSourceName = Context::deviceManager()->getSourceName( shared_from_this() );
+
+	return mSourceName;
+}
+
 size_t Device::getNumInputChannels()
 {
 	return Context::deviceManager()->getNumInputChannels( shared_from_this() );

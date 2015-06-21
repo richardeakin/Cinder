@@ -201,6 +201,7 @@ void DeviceTestApp::setupMultiChannelDeviceWindows(  const string &deviceName )
 void DeviceTestApp::printDeviceDetails( const audio::DeviceRef &device )
 {
 	console() << "\t name: " << device->getName() << endl;
+	console() << "\t source: " << device->getSourceName() << endl;
 	console() << "\t output channels: " << device->getNumOutputChannels() << endl;
 	console() << "\t input channels: " << device->getNumInputChannels() << endl;
 	console() << "\t samplerate: " << device->getSampleRate() << endl;

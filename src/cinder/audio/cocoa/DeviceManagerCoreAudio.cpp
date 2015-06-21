@@ -164,6 +164,34 @@ string DeviceManagerCoreAudio::getName( const DeviceRef &device )
 	return getAudioObjectPropertyString( deviceId, kAudioObjectPropertyName );
 }
 
+string DeviceManagerCoreAudio::getSourceName( const DeviceRef &device )
+{
+	::AudioDeviceID deviceId = mDeviceIds.at( device );
+
+	::AudioObjectPropertyAddress propertyAddress = getAudioObjectPropertyAddress( kAudioDevicePropertyDataSource, kAudioDevicePropertyScopeOutput );
+
+	UInt32 dataSourcePropAddress;
+	UInt32 dataSourcePropAddressSize = sizeof( dataSourcePropAddress );
+	OSStatus status = ::AudioObjectGetPropertyData( deviceId, &propertyAddress, 0, nullptr, &dataSourcePropAddressSize, &dataSourcePropAddress );
+	if( status == kAudioHardwareUnknownPropertyError ) {
+		// no dataSource property on this device, return empty string
+		return "";
+	}
+	else {
+		CI_ASSERT( status == noErr );
+	}
+
+	::AudioObjectPropertyAddress dataSourceNameAddress = getAudioObjectPropertyAddress( kAudioDevicePropertyDataSourceNameForIDCFString, kAudioDevicePropertyScopeOutput );;
+	CFStringRef dataSourceNameCF;
+	::AudioValueTranslation translation = { &dataSourcePropAddress, sizeof( UInt32 ), &dataSourceNameCF, sizeof( CFStringRef ) };
+	getAudioObjectPropertyData( deviceId, dataSourceNameAddress, sizeof( AudioValueTranslation ), &translation );
+
+	string result = ci::cocoa::convertCfString( dataSourceNameCF );
+	CFRelease( dataSourceNameCF );
+
+	return result;
+}
+
 size_t DeviceManagerCoreAudio::getNumInputChannels( const DeviceRef &device )
 {
 	::AudioDeviceID deviceId = mDeviceIds.at( device );
@@ -306,7 +334,7 @@ void DeviceManagerCoreAudio::registerPropertyListeners( DeviceRef device, ::Audi
 
 	dispatch_queue_t currentQueue = dispatch_get_current_queue();
 
-	// data source (ex. internal speakers, headphones)
+	// source (ex. internal speakers, headphones)
 	{
 		::AudioObjectPropertyAddress propertyAddress = getAudioObjectPropertyAddress( kAudioDevicePropertyDataSource, kAudioDevicePropertyScopeOutput );
 		OSStatus status = ::AudioObjectAddPropertyListenerBlock( deviceId, &propertyAddress, currentQueue, listenerBlock );

@@ -58,6 +58,8 @@ class Device : public std::enable_shared_from_this<Device>, Noncopyable {
 	const std::string& getName();
 	//! Returns the key of this Device, which is a unique platform-specific defined identifier.
 	const std::string& getKey();
+	//! Returns the name of this Device's source, ex. 'headphones' or 'speakers'.
+	const std::string& getSourceName();
 	//! Returns the number of input channels this Device supports.
 	size_t getNumInputChannels();
 	//! Returns the number of output channels this Device supports.
@@ -98,6 +100,8 @@ class Device : public std::enable_shared_from_this<Device>, Noncopyable {
 	signals::Signal<void()>& getSignalParamsWillChange()	{ return mSignalParamsWillChange; }
 	//! Returns a signal that notifies connected slots after the format of this Device has changed. This can occur from a call to updateFormat() or by the system.
 	signals::Signal<void()>& getSignalParamsDidChange()		{ return mSignalParamsDidChange; }
+	//! Returns a signal that notifies connected slots when a source (ex. speakers or headphones) has changed. You can get the name of the new datasource with getSourceName().
+	signals::Signal<void()>& getSignalSourceChanged()		{ return mSignalSourceChanged; }
 
 	//! Returns a signal that notifies when the default output has changed.
 	static signals::Signal<void()>& getSignalDefaultOutputChanged();
@@ -112,10 +116,10 @@ class Device : public std::enable_shared_from_this<Device>, Noncopyable {
   private:
 	Device( const std::string &key );
 
-	std::string					mKey, mName;
+	std::string					mKey, mName, mSourceName;
 	size_t						mSampleRate, mFramesPerBlock;
 	bool						mDefault;
-	signals::Signal<void()>		mSignalParamsWillChange, mSignalParamsDidChange;
+	signals::Signal<void()>		mSignalParamsWillChange, mSignalParamsDidChange, mSignalSourceChanged;
 
 	friend class DeviceManager;
 };
@@ -133,6 +137,7 @@ class DeviceManager : private Noncopyable {
 	virtual DeviceRef getDefaultInput()													= 0;
 
 	virtual std::string		getName( const DeviceRef &device )										= 0;
+	virtual std::string		getSourceName( const DeviceRef &device )								= 0;
 	virtual size_t			getNumInputChannels( const DeviceRef &device )							= 0;
 	virtual size_t			getNumOutputChannels( const DeviceRef &device )							= 0;
 	virtual size_t			getSampleRate( const DeviceRef &device )								= 0;
