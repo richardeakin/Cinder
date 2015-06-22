@@ -47,10 +47,10 @@ class DeviceManagerCoreAudio : public DeviceManager {
 	size_t getSampleRate( const DeviceRef &device )								override;
 	size_t getFramesPerBlock( const DeviceRef &device )							override;
 
-	void setSampleRate( const DeviceRef &device, size_t sampleRate )				override;
-	void setFramesPerBlock( const DeviceRef &device, size_t framesPerBlock )		override;
+	void setSampleRate( const DeviceRef &device, size_t sampleRate )			override;
+	void setFramesPerBlock( const DeviceRef &device, size_t framesPerBlock )	override;
 
-	bool			isFormatUpdatedAsync() const override		{ return true; }
+	bool			isFormatUpdatedAsync() const	override		{ return true; }
 
 	//! Sets the device related to \a key and managed by \a componenetInstance as the current active audio device.
 	void setCurrentOutputDevice( const DeviceRef &device, ::AudioComponentInstance componentInstance );
