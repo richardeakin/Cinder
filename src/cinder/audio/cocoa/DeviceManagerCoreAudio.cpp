@@ -496,7 +496,12 @@ OSStatus DeviceManagerCoreAudio::devicesChangedCallback( AudioObjectID inObjectI
 
 dispatch_queue_t DeviceManagerCoreAudio::getNotficationDispatchQueue() const
 {
-	return dispatch_get_current_queue();
+	// Right now we're forcing all notifications to occur on the main thread. It would be nice to
+	// give user control over what thread they came on (ex. whatever their audio connection / disconnection thread is),
+	// though we couldn't use dispatch_get_current_queue() because then the notifications occur on the 'default concurrent queue',
+	// which is most likely not the user's loading thread.
+	
+	return dispatch_get_main_queue();
 }
 
 vector<size_t> DeviceManagerCoreAudio::getAcceptableSampleRates( ::AudioDeviceID deviceId )
