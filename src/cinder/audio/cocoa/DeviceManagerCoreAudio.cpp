@@ -389,6 +389,8 @@ void DeviceManagerCoreAudio::registerDevicesChangedListeners()
 	//			case kAudioHardwarePropertyDefaultSystemOutputDevice:
 	//			break;
 				case kAudioHardwarePropertyDevices:
+					// clear the current Device list, it will be updated next time it is requested.
+					mDevices.clear();
 					mSignalDevicesChanged.emit();
 				break;
 				default:
@@ -463,6 +465,7 @@ const vector<DeviceRef>& DeviceManagerCoreAudio::getDevices()
 
 		registerDevicesChangedListeners();
 	}
+	
 	return mDevices;
 }
 
