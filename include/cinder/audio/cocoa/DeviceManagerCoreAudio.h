@@ -59,13 +59,10 @@ class DeviceManagerCoreAudio : public DeviceManager {
   private:
 	void setCurrentDeviceImpl( const DeviceRef &device, const DeviceRef &current, ::AudioComponentInstance componentInstance, bool isOutput );
 	// device is copied in so that it is retained in an async callback.
-	void registerPropertyListeners( DeviceRef device, ::AudioDeviceID deviceId, bool isOutput );
-	void unregisterPropertyListeners( const DeviceRef &device, ::AudioDeviceID deviceId, bool isOutput );
-
+	void registerDevicePropertyListeners( DeviceRef device, ::AudioDeviceID deviceId, bool isOutput );
+	void unregisterDevicePropertyListeners( const DeviceRef &device, ::AudioDeviceID deviceId, bool isOutput );
 	void registerDevicesChangedListeners();
 	void unregisterDevicesChangedListeners();
-	// called when global device properties change, ex. a device is connected or disconnected, or a default device is changed
-	static OSStatus devicesChangedCallback( AudioObjectID inObjectID, UInt32 inNumberAddresses, const AudioObjectPropertyAddress inAddresses[], void *inClientData );
 
 	std::vector<size_t>			getAcceptableSampleRates( ::AudioDeviceID deviceId );
 	std::pair<size_t, size_t>	getAcceptableFramesPerBlockRange( ::AudioDeviceID deviceId );

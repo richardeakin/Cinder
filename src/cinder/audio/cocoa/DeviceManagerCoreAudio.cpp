@@ -278,16 +278,16 @@ void DeviceManagerCoreAudio::setCurrentDeviceImpl( const DeviceRef &device, cons
 
 	if( device != current ) {
 		if( current )
-			unregisterPropertyListeners( current, mDeviceIds.at( current ), isOutput );
+			unregisterDevicePropertyListeners( current, mDeviceIds.at( current ), isOutput );
 
-		registerPropertyListeners( device, deviceId, true );
+		registerDevicePropertyListeners( device, deviceId, true );
 	}
 
 	OSStatus status = ::AudioUnitSetProperty( componentInstance, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0, &deviceId, sizeof( deviceId ) );
 	CI_VERIFY( status == noErr );
 }
 
-void DeviceManagerCoreAudio::registerPropertyListeners( DeviceRef device, ::AudioDeviceID deviceId, bool isOutput )
+void DeviceManagerCoreAudio::registerDevicePropertyListeners( DeviceRef device, ::AudioDeviceID deviceId, bool isOutput )
 {
 	// device is 'block copied' into the async callback because it is passed by value.
 
@@ -303,11 +303,9 @@ void DeviceManagerCoreAudio::registerPropertyListeners( DeviceRef device, ::Audi
 			}
 			else if( propertyAddress.mSelector == kAudioDevicePropertyNominalSampleRate ) {
 				paramsUpdated = true;
-				//auto result = getAudioObjectProperty<Float64>( deviceId, propertyAddress );
 			}
 			else if( propertyAddress.mSelector == kAudioDevicePropertyBufferFrameSize ) {
 				paramsUpdated = true;
-				//auto result = getAudioObjectProperty<UInt32>( deviceId, propertyAddress );
 			}
 		}
 
@@ -354,7 +352,7 @@ void DeviceManagerCoreAudio::registerPropertyListeners( DeviceRef device, ::Audi
 		mInputDeviceListenerBlock = Block_copy( listenerBlock );
 }
 
-void DeviceManagerCoreAudio::unregisterPropertyListeners( const DeviceRef &device, ::AudioDeviceID deviceId, bool isOutput )
+void DeviceManagerCoreAudio::unregisterDevicePropertyListeners( const DeviceRef &device, ::AudioDeviceID deviceId, bool isOutput )
 {
 	AudioObjectPropertyListenerBlock listenerBlock = ( isOutput ? mOutputDeviceListenerBlock : mInputDeviceListenerBlock );
 	dispatch_queue_t dispatchQueue = getNotficationDispatchQueue();
@@ -377,21 +375,6 @@ void DeviceManagerCoreAudio::unregisterPropertyListeners( const DeviceRef &devic
 	Block_release( listenerBlock );
 }
 
-const vector<DeviceRef>& DeviceManagerCoreAudio::getDevices()
-{
-	if( mDevices.empty() ) {
-		auto deviceIds = getAudioObjectPropertyVector<::AudioObjectID>( kAudioObjectSystemObject, kAudioHardwarePropertyDevices );
-		for( ::AudioDeviceID &deviceId : deviceIds ) {
-			string key = keyForDeviceId( deviceId );
-			auto device = addDevice( key );
-			mDeviceIds.insert( { device, deviceId } );
-		}
-
-		registerDevicesChangedListeners();
-	}
-	return mDevices;
-}
-
 void DeviceManagerCoreAudio::registerDevicesChangedListeners()
 {
 	AudioObjectPropertyListenerBlock listenerBlock = ^( UInt32 inNumberAddresses, const AudioObjectPropertyAddress inAddresses[] ) {
@@ -399,18 +382,18 @@ void DeviceManagerCoreAudio::registerDevicesChangedListeners()
 			switch( inAddresses[i].mSelector ) {
 				case kAudioHardwarePropertyDefaultInputDevice:
 					mSignalDefaultInputChanged.emit();
-					break;
+				break;
 				case kAudioHardwarePropertyDefaultOutputDevice:
 					mSignalDefaultOutputChanged.emit();
-					break;
-					//			case kAudioHardwarePropertyDefaultSystemOutputDevice:
-					//			break;
+				break;
+	//			case kAudioHardwarePropertyDefaultSystemOutputDevice:
+	//			break;
 				case kAudioHardwarePropertyDevices:
 					mSignalDevicesChanged.emit();
-					break;
+				break;
 				default:
-					//CI_LOG_V( "unhandled property change" );
-					break;
+					CI_LOG_W( "unhandled property change" );
+				break;
 			}
 		}
 	};
@@ -468,30 +451,19 @@ void DeviceManagerCoreAudio::unregisterDevicesChangedListeners()
 	}
 }
 
-// static
-OSStatus DeviceManagerCoreAudio::devicesChangedCallback( AudioObjectID inObjectID, UInt32 inNumberAddresses, const AudioObjectPropertyAddress inAddresses[], void *inClientData )
+const vector<DeviceRef>& DeviceManagerCoreAudio::getDevices()
 {
-	DeviceManagerCoreAudio *deviceManager = (DeviceManagerCoreAudio *)inClientData;
-
-	for( UInt32 i = 0; i < inNumberAddresses; i++ ) {
-		switch( inAddresses[i].mSelector ) {
-			case kAudioHardwarePropertyDefaultInputDevice:
-				deviceManager->mSignalDefaultInputChanged.emit();
-			break;
-			case kAudioHardwarePropertyDefaultOutputDevice:
-				deviceManager->mSignalDefaultOutputChanged.emit();
-			break;
-//			case kAudioHardwarePropertyDefaultSystemOutputDevice:
-//			break;
-			case kAudioHardwarePropertyDevices:
-				deviceManager->mSignalDevicesChanged.emit();
-			break;
-			default:
-				//CI_LOG_V( "unhandled property change" );
-			break;
+	if( mDevices.empty() ) {
+		auto deviceIds = getAudioObjectPropertyVector<::AudioObjectID>( kAudioObjectSystemObject, kAudioHardwarePropertyDevices );
+		for( ::AudioDeviceID &deviceId : deviceIds ) {
+			string key = keyForDeviceId( deviceId );
+			auto device = addDevice( key );
+			mDeviceIds.insert( { device, deviceId } );
 		}
+
+		registerDevicesChangedListeners();
 	}
-	return noErr;
+	return mDevices;
 }
 
 dispatch_queue_t DeviceManagerCoreAudio::getNotficationDispatchQueue() const
