@@ -220,7 +220,13 @@ struct VSelector : public TestWidget {
 		if( mSegments.empty() )
 			return "";
 		
-		return mSegments[mCurrentSectionIndex];
+		return mSegments.at( mCurrentSectionIndex );
+	}
+
+	void clearSegments()
+	{
+		mSegments.clear();
+		mCurrentSectionIndex = 0;
 	}
 
 	void draw()
@@ -254,7 +260,7 @@ struct VSelector : public TestWidget {
 
 		if( ! mSegments.empty() ) {
 			gl::color( mSelectedColor );
-			mTexFont->drawString( mSegments[mCurrentSectionIndex], vec2( section.x1 + mPadding, section.getCenter().y + mTexFont->getFont().getDescent() ) );
+			mTexFont->drawString( mSegments.at( mCurrentSectionIndex ), vec2( section.x1 + mPadding, section.getCenter().y + mTexFont->getFont().getDescent() ) );
 		}
 
 		if( ! mTitle.empty() ) {
