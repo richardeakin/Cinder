@@ -69,12 +69,16 @@ class Device : public std::enable_shared_from_this<Device>, Noncopyable {
 	//! Returns the current frames per block.
 	size_t getFramesPerBlock();
 
-	//! \brief Returns whether this Device was aquired as a default device
+	//! \brief Returns whether this Device is the default output (aquired with getDefaultOutput())
 	//!
-	//! The default Device is treated with special care, as it may change when for example the user
-	//! selects a new audio device as default in the OS's settings. You retrieve a default device with
-	//! either getDefaultOutput() or getDefaultInput().
-	bool isDefault() const		{ return mDefault; }
+	//! The default Device is treated with special care, as it may change during runtime, for example
+	//! when the user selects a new audio device as default in the OS's settings.
+	bool isDefaultOutput() const;
+	//! \brief Returns whether this Device is the default input (aquired with getDefaultInput())
+	//!
+	//! The default Device is treated with special care, as it may change during runtime, for example
+	//! when the user selects a new audio device as default in the OS's settings.
+	bool isDefaultInput() const;
 
 	//! Defines the format parameters that are settable when passed in with updateFormat()
 	struct Format {
@@ -118,7 +122,6 @@ class Device : public std::enable_shared_from_this<Device>, Noncopyable {
 
 	std::string					mKey, mName, mSourceName;
 	size_t						mSampleRate, mFramesPerBlock;
-	bool						mDefault;
 	signals::Signal<void()>		mSignalParamsWillChange, mSignalParamsDidChange, mSignalSourceChanged;
 
 	friend class DeviceManager;
@@ -160,13 +163,18 @@ class DeviceManager : private Noncopyable {
 	DeviceManager()	{}
 
 	DeviceRef	addDevice( const std::string &key );
+	DeviceRef	getDefaultOutputImpl();
+	DeviceRef	getDefaultInputImpl();
 
 	void emitParamsWillChange( const DeviceRef &device );
 	void emitParamsDidChange( const DeviceRef &device );
 	void emitSourceChanged( const DeviceRef &device );
 
 	std::vector<DeviceRef>		mDevices;
+	DeviceRef					mDefaultOutput, mDefaultInput;
 	signals::Signal<void()>		mSignalDefaultOutputChanged, mSignalDefaultInputChanged, mSignalDevicesChanged;
+
+	friend class Device;
 };
 
 } } // namespace cinder::audio

@@ -46,23 +46,29 @@ namespace cinder { namespace audio {
 // ----------------------------------------------------------------------------------------------------
 
 Device::Device( const std::string &key )
-	: mKey( key ), mSampleRate( 0 ), mFramesPerBlock( 0 ), mDefault( false )
+	: mKey( key ), mSampleRate( 0 ), mFramesPerBlock( 0 )
 {}
 
 // static
 DeviceRef Device::getDefaultOutput()
 {
-	auto result = Context::deviceManager()->getDefaultOutput();
-	result->mDefault = true;
-	return result;
+	return Context::deviceManager()->getDefaultOutputImpl();
 }
 
 // static
 DeviceRef Device::getDefaultInput()
 {
-	auto result = Context::deviceManager()->getDefaultInput();
-	result->mDefault = true;
-	return result;
+	return Context::deviceManager()->getDefaultInputImpl();
+}
+
+bool Device::isDefaultOutput() const
+{
+	return Context::deviceManager()->mDefaultOutput == shared_from_this();
+}
+
+bool Device::isDefaultInput() const
+{
+	return Context::deviceManager()->mDefaultInput == shared_from_this();
 }
 
 // static
@@ -215,6 +221,18 @@ string Device::printDevicesToString()
 // ----------------------------------------------------------------------------------------------------
 // MARK: - DeviceManager
 // ----------------------------------------------------------------------------------------------------
+
+DeviceRef DeviceManager::getDefaultOutputImpl()
+{
+	mDefaultOutput = getDefaultOutput();
+	return mDefaultOutput;
+}
+
+DeviceRef DeviceManager::getDefaultInputImpl()
+{
+	mDefaultInput = getDefaultInput();
+	return mDefaultInput;
+}
 
 DeviceRef DeviceManager::findDeviceByName( const string &name )
 {

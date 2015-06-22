@@ -465,7 +465,7 @@ const vector<DeviceRef>& DeviceManagerCoreAudio::getDevices()
 
 		registerDevicesChangedListeners();
 	}
-	
+
 	return mDevices;
 }
 
