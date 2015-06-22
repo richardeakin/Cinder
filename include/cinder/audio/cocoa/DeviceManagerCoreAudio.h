@@ -70,11 +70,13 @@ class DeviceManagerCoreAudio : public DeviceManager {
 	std::vector<size_t>			getAcceptableSampleRates( ::AudioDeviceID deviceId );
 	std::pair<size_t, size_t>	getAcceptableFramesPerBlockRange( ::AudioDeviceID deviceId );
 
+	dispatch_queue_t	getNotficationDispatchQueue() const;
+
 	static std::string keyForDeviceId( ::AudioDeviceID deviceId );
 
 	std::map<DeviceRef, ::AudioDeviceID>	mDeviceIds;
 	DeviceRef								mCurrentOutputDevice, mCurrentInputDevice;
-	::AudioObjectPropertyListenerBlock		mOutputDeviceListenerBlock, mInputDeviceListenerBlock;
+	::AudioObjectPropertyListenerBlock		mOutputDeviceListenerBlock, mInputDeviceListenerBlock, mDevicesChangedListenerBlock;
 
 	bool									mUserHasModifiedFormat; // flag that indicates the user has modified device format, rather than a system update.
 

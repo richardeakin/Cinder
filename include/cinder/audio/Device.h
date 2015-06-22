@@ -163,6 +163,7 @@ class DeviceManager : private Noncopyable {
 
 	void emitParamsWillChange( const DeviceRef &device );
 	void emitParamsDidChange( const DeviceRef &device );
+	void emitSourceChanged( const DeviceRef &device );
 
 	std::vector<DeviceRef>		mDevices;
 	signals::Signal<void()>		mSignalDefaultOutputChanged, mSignalDefaultInputChanged, mSignalDevicesChanged;

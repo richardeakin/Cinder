@@ -21,6 +21,10 @@
  POSSIBILITY OF SUCH DAMAGE.
 */
 
+// Note on using AudioObjectAddPropertyListenerBlock instead of AudioObjectAddPropertyListener + static callback
+// - The only way we can ensure what thread the notifications happen on is with the block based api, as
+//   you can specify what dispatch queue to use (currently using dispatch_get_current_queue()).
+
 #include "cinder/audio/cocoa/DeviceManagerCoreAudio.h"
 #include "cinder/cocoa/CinderCocoa.h"
 #include "cinder/audio/Exception.h"
@@ -283,7 +287,6 @@ void DeviceManagerCoreAudio::setCurrentDeviceImpl( const DeviceRef &device, cons
 	CI_VERIFY( status == noErr );
 }
 
-// TODO: if device is considered 'default', register for kAudioHardwarePropertyDefaultOutputDevice and update when required
 void DeviceManagerCoreAudio::registerPropertyListeners( DeviceRef device, ::AudioDeviceID deviceId, bool isOutput )
 {
 	// device is 'block copied' into the async callback because it is passed by value.
@@ -296,17 +299,7 @@ void DeviceManagerCoreAudio::registerPropertyListeners( DeviceRef device, ::Audi
 
 			AudioObjectPropertyAddress propertyAddress = inAddresses[i];
 			if( propertyAddress.mSelector == kAudioDevicePropertyDataSource ) {
-				UInt32 dataSource = getAudioObjectProperty<UInt32>( deviceId, propertyAddress );
-
-				::AudioObjectPropertyAddress dataSourceNameAddress = getAudioObjectPropertyAddress( kAudioDevicePropertyDataSourceNameForIDCFString, kAudioDevicePropertyScopeOutput );;
-				CFStringRef dataSourceNameCF;
-				::AudioValueTranslation translation = { &dataSource, sizeof( UInt32 ), &dataSourceNameCF, sizeof( CFStringRef ) };
-				getAudioObjectPropertyData( deviceId, dataSourceNameAddress, sizeof( AudioValueTranslation ), &translation );
-
-				//string dataSourceName = ci::cocoa::convertCfString( dataSourceNameCF );
-				//CFRelease( dataSourceNameCF );
-
-				//CI_LOG_V( "device data source changed to: " << dataSourceName );
+				emitSourceChanged( device );
 			}
 			else if( propertyAddress.mSelector == kAudioDevicePropertyNominalSampleRate ) {
 				paramsUpdated = true;
@@ -332,26 +325,26 @@ void DeviceManagerCoreAudio::registerPropertyListeners( DeviceRef device, ::Audi
 		mUserHasModifiedFormat = false;
     };
 
-	dispatch_queue_t currentQueue = dispatch_get_current_queue();
+	dispatch_queue_t dispatchQueue = getNotficationDispatchQueue();
 
 	// source (ex. internal speakers, headphones)
 	{
 		::AudioObjectPropertyAddress propertyAddress = getAudioObjectPropertyAddress( kAudioDevicePropertyDataSource, kAudioDevicePropertyScopeOutput );
-		OSStatus status = ::AudioObjectAddPropertyListenerBlock( deviceId, &propertyAddress, currentQueue, listenerBlock );
+		OSStatus status = ::AudioObjectAddPropertyListenerBlock( deviceId, &propertyAddress, dispatchQueue, listenerBlock );
 		CI_VERIFY( status == noErr );
 	}
 
 	// device samplerate
 	{
 		::AudioObjectPropertyAddress propertyAddress = getAudioObjectPropertyAddress( kAudioDevicePropertyNominalSampleRate );
-		OSStatus status = ::AudioObjectAddPropertyListenerBlock( deviceId, &propertyAddress, currentQueue, listenerBlock );
+		OSStatus status = ::AudioObjectAddPropertyListenerBlock( deviceId, &propertyAddress, dispatchQueue, listenerBlock );
 		CI_VERIFY( status == noErr );
 	}
 
 	// frames per block
 	{
 		::AudioObjectPropertyAddress propertyAddress = getAudioObjectPropertyAddress( kAudioDevicePropertyBufferFrameSize );
-		OSStatus status = ::AudioObjectAddPropertyListenerBlock( deviceId, &propertyAddress, currentQueue, listenerBlock );
+		OSStatus status = ::AudioObjectAddPropertyListenerBlock( deviceId, &propertyAddress, dispatchQueue, listenerBlock );
 		CI_VERIFY( status == noErr );
 	}
 
@@ -364,21 +357,21 @@ void DeviceManagerCoreAudio::registerPropertyListeners( DeviceRef device, ::Audi
 void DeviceManagerCoreAudio::unregisterPropertyListeners( const DeviceRef &device, ::AudioDeviceID deviceId, bool isOutput )
 {
 	AudioObjectPropertyListenerBlock listenerBlock = ( isOutput ? mOutputDeviceListenerBlock : mInputDeviceListenerBlock );
-	dispatch_queue_t currentQueue = dispatch_get_current_queue();
+	dispatch_queue_t dispatchQueue = getNotficationDispatchQueue();
 
 	// data source (ex. internal speakers, headphones)
 	::AudioObjectPropertyAddress dataSourceAddress = getAudioObjectPropertyAddress( kAudioDevicePropertyDataSource, kAudioDevicePropertyScopeOutput );
-	OSStatus status = ::AudioObjectRemovePropertyListenerBlock( deviceId, &dataSourceAddress, currentQueue, listenerBlock );
+	OSStatus status = ::AudioObjectRemovePropertyListenerBlock( deviceId, &dataSourceAddress, dispatchQueue, listenerBlock );
 	CI_VERIFY( status == noErr );
 
 	// device samplerate
 	::AudioObjectPropertyAddress samplerateAddress = getAudioObjectPropertyAddress( kAudioDevicePropertyNominalSampleRate );
-	status = ::AudioObjectRemovePropertyListenerBlock( deviceId, &samplerateAddress, currentQueue, listenerBlock );
+	status = ::AudioObjectRemovePropertyListenerBlock( deviceId, &samplerateAddress, dispatchQueue, listenerBlock );
 	CI_VERIFY( status == noErr );
 
 	// frames per block
 	::AudioObjectPropertyAddress frameSizeAddress = getAudioObjectPropertyAddress( kAudioDevicePropertyBufferFrameSize );
-	status = ::AudioObjectRemovePropertyListenerBlock( deviceId, &frameSizeAddress, currentQueue, listenerBlock );
+	status = ::AudioObjectRemovePropertyListenerBlock( deviceId, &frameSizeAddress, dispatchQueue, listenerBlock );
 	CI_VERIFY( status == noErr );
 
 	Block_release( listenerBlock );
@@ -401,48 +394,76 @@ const vector<DeviceRef>& DeviceManagerCoreAudio::getDevices()
 
 void DeviceManagerCoreAudio::registerDevicesChangedListeners()
 {
+	AudioObjectPropertyListenerBlock listenerBlock = ^( UInt32 inNumberAddresses, const AudioObjectPropertyAddress inAddresses[] ) {
+		for( UInt32 i = 0; i < inNumberAddresses; i++ ) {
+			switch( inAddresses[i].mSelector ) {
+				case kAudioHardwarePropertyDefaultInputDevice:
+					mSignalDefaultInputChanged.emit();
+					break;
+				case kAudioHardwarePropertyDefaultOutputDevice:
+					mSignalDefaultOutputChanged.emit();
+					break;
+					//			case kAudioHardwarePropertyDefaultSystemOutputDevice:
+					//			break;
+				case kAudioHardwarePropertyDevices:
+					mSignalDevicesChanged.emit();
+					break;
+				default:
+					//CI_LOG_V( "unhandled property change" );
+					break;
+			}
+		}
+	};
+
+	dispatch_queue_t dispatchQueue = getNotficationDispatchQueue();
+
 	// add listener for devices added or removed
 	{
 		AudioObjectPropertyAddress propertyAddress = { kAudioHardwarePropertyDevices, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
-		OSStatus status = ::AudioObjectAddPropertyListener( kAudioObjectSystemObject, &propertyAddress, DeviceManagerCoreAudio::devicesChangedCallback, this );
+		OSStatus status = ::AudioObjectAddPropertyListenerBlock( kAudioObjectSystemObject, &propertyAddress, dispatchQueue, listenerBlock );
 		CI_VERIFY( status == noErr );
 	}
 
 	// add listener for default output device changed
 	{
 		AudioObjectPropertyAddress propertyAddress = { kAudioHardwarePropertyDefaultOutputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
-		OSStatus status = ::AudioObjectAddPropertyListener( kAudioObjectSystemObject, &propertyAddress, DeviceManagerCoreAudio::devicesChangedCallback, this );
+		OSStatus status = ::AudioObjectAddPropertyListenerBlock( kAudioObjectSystemObject, &propertyAddress, dispatchQueue, listenerBlock );
 		CI_VERIFY( status == noErr );
 	}
 
 	// add listener for default input device changed
 	{
 		AudioObjectPropertyAddress propertyAddress = { kAudioHardwarePropertyDefaultInputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
-		OSStatus status = ::AudioObjectAddPropertyListener( kAudioObjectSystemObject, &propertyAddress, DeviceManagerCoreAudio::devicesChangedCallback, this );
+		OSStatus status = ::AudioObjectAddPropertyListenerBlock( kAudioObjectSystemObject, &propertyAddress, dispatchQueue, listenerBlock );
 		CI_VERIFY( status == noErr );
 	}
+
+	mDevicesChangedListenerBlock = Block_copy( listenerBlock );
 }
 
 void DeviceManagerCoreAudio::unregisterDevicesChangedListeners()
 {
+	AudioObjectPropertyListenerBlock listenerBlock = mDevicesChangedListenerBlock;
+	dispatch_queue_t dispatchQueue = getNotficationDispatchQueue();
+
 	// remove listener for devices added or removed
 	{
 		AudioObjectPropertyAddress propertyAddress = { kAudioHardwarePropertyDevices, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
-		OSStatus status = ::AudioObjectRemovePropertyListener( kAudioObjectSystemObject, &propertyAddress, DeviceManagerCoreAudio::devicesChangedCallback, this );
+		OSStatus status = ::AudioObjectRemovePropertyListenerBlock( kAudioObjectSystemObject, &propertyAddress, dispatchQueue, listenerBlock );
 		CI_VERIFY( status == noErr );
 	}
 
 	// remove listener for default output device changed
 	{
 		AudioObjectPropertyAddress propertyAddress = { kAudioHardwarePropertyDefaultOutputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
-		OSStatus status = ::AudioObjectRemovePropertyListener( kAudioObjectSystemObject, &propertyAddress, DeviceManagerCoreAudio::devicesChangedCallback, this );
+		OSStatus status = ::AudioObjectRemovePropertyListenerBlock( kAudioObjectSystemObject, &propertyAddress, dispatchQueue, listenerBlock );
 		CI_VERIFY( status == noErr );
 	}
 
 	// remove listener for default input device changed
 	{
 		AudioObjectPropertyAddress propertyAddress = { kAudioHardwarePropertyDefaultInputDevice, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMaster };
-		OSStatus status = ::AudioObjectRemovePropertyListener( kAudioObjectSystemObject, &propertyAddress, DeviceManagerCoreAudio::devicesChangedCallback, this );
+		OSStatus status = ::AudioObjectRemovePropertyListenerBlock( kAudioObjectSystemObject, &propertyAddress, dispatchQueue, listenerBlock );
 		CI_VERIFY( status == noErr );
 	}
 }
@@ -471,6 +492,11 @@ OSStatus DeviceManagerCoreAudio::devicesChangedCallback( AudioObjectID inObjectI
 		}
 	}
 	return noErr;
+}
+
+dispatch_queue_t DeviceManagerCoreAudio::getNotficationDispatchQueue() const
+{
+	return dispatch_get_current_queue();
 }
 
 vector<size_t> DeviceManagerCoreAudio::getAcceptableSampleRates( ::AudioDeviceID deviceId )

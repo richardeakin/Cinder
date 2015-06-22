@@ -264,4 +264,11 @@ void DeviceManager::emitParamsDidChange( const DeviceRef &device )
 	device->mSignalParamsDidChange.emit();
 }
 
+void DeviceManager::emitSourceChanged( const DeviceRef &device )
+{
+	// clear source name, will be updated the next time is is requested
+	device->mSourceName.clear();
+	device->mSignalSourceChanged.emit();
+}
+
 } } // namespace cinder::audio
