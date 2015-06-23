@@ -63,12 +63,12 @@ DeviceRef Device::getDefaultInput()
 
 bool Device::isDefaultOutput() const
 {
-	return Context::deviceManager()->mDefaultOutput == shared_from_this();
+	return getDefaultOutput() == shared_from_this();
 }
 
 bool Device::isDefaultInput() const
 {
-	return Context::deviceManager()->mDefaultInput == shared_from_this();
+	return getDefaultInput() == shared_from_this();
 }
 
 // static
@@ -224,13 +224,17 @@ string Device::printDevicesToString()
 
 DeviceRef DeviceManager::getDefaultOutputImpl()
 {
-	mDefaultOutput = getDefaultOutput();
+	if( ! mDefaultOutput )
+		mDefaultOutput = getDefaultOutput();
+
 	return mDefaultOutput;
 }
 
 DeviceRef DeviceManager::getDefaultInputImpl()
 {
-	mDefaultInput = getDefaultInput();
+	if( ! mDefaultInput )
+		mDefaultInput = getDefaultInput();
+
 	return mDefaultInput;
 }
 
