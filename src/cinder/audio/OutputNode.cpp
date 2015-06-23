@@ -83,10 +83,6 @@ OutputDeviceNode::OutputDeviceNode( const DeviceRef &device, const Format &forma
 {
 	CI_ASSERT( mDevice );
 
-	// listen to the notifications sent by device property changes in order to update the audio graph.
-	mWillChangeConn = mDevice->getSignalParamsWillChange().connect( bind( &OutputDeviceNode::deviceParamsWillChange, this ) );
-	mDidChangeConn = mDevice->getSignalParamsDidChange().connect( bind( &OutputDeviceNode::deviceParamsDidChange, this ) );
-
 	size_t deviceNumChannels = mDevice->getNumOutputChannels();
 
 	// If number of channels hasn't been specified, default to 2 (or 1 if that is all that is available).
@@ -97,7 +93,17 @@ OutputDeviceNode::OutputDeviceNode( const DeviceRef &device, const Format &forma
 
 	// Double check the device has enough channels to support what was requested, which may not be the case if the user asked for more than what is available.
 	if( deviceNumChannels < getNumChannels() )
-		throw AudioFormatExc( string( "Device can not accommodate " ) + to_string( deviceNumChannels ) + " output channels." );
+		throw AudioFormatExc( string( "Device cannot accommodate " ) + to_string( deviceNumChannels ) + " output channels." );
+
+	// listen to the notifications sent by device property changes in order to update the audio graph.
+	mParamsWillChangeConn = mDevice->getSignalParamsWillChange().connect( bind( &OutputDeviceNode::deviceParamsWillChange, this ) );
+	mParamsDidChangeConn = mDevice->getSignalParamsDidChange().connect( bind( &OutputDeviceNode::deviceParamsDidChange, this ) );
+
+	// list to notifications related to system device changes
+	if( mDevice->isDefaultOutput() ) {
+		CI_LOG_V( "registering default out changed signal for update" );
+		mDefaultDeviceChangedConn = Device::getSignalDefaultOutputChanged().connect( bind( &OutputDeviceNode::onDefaultDeviceChanged, this ) );
+	}
 }
 
 void OutputDeviceNode::deviceParamsWillChange()
@@ -113,6 +119,27 @@ void OutputDeviceNode::deviceParamsDidChange()
 	getContext()->initializeAllNodes();
 
 	getContext()->setEnabled( mWasEnabledBeforeParamsChange );
+}
+
+void OutputDeviceNode::onDefaultDeviceChanged()
+{
+	CI_LOG_V( "bang" );
+
+	// refresh default device
+	auto previousDevice = mDevice;
+	mDevice = Device::getDefaultOutput();
+
+	auto ctx = getContext();
+
+	bool wasEnabled = isEnabled();
+	ctx->disable();
+
+	// re-initialize impl, possibly causes reconfiguration if params have changed
+	auto thisRef = shared_from_this();
+	ctx->uninitializeNode( thisRef );
+	ctx->initializeNode( thisRef );
+
+	getContext()->setEnabled( wasEnabled );
 }
 
 } } // namespace cinder::audio
