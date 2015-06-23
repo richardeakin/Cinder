@@ -381,16 +381,21 @@ void DeviceManagerCoreAudio::registerDevicesChangedListeners()
 		for( UInt32 i = 0; i < inNumberAddresses; i++ ) {
 			switch( inAddresses[i].mSelector ) {
 				case kAudioHardwarePropertyDefaultInputDevice:
+					mDefaultInput.reset();
 					mSignalDefaultInputChanged.emit();
 				break;
 				case kAudioHardwarePropertyDefaultOutputDevice:
+					mDefaultOutput.reset();
 					mSignalDefaultOutputChanged.emit();
 				break;
-	//			case kAudioHardwarePropertyDefaultSystemOutputDevice:
-	//			break;
+//				case kAudioHardwarePropertyDefaultSystemOutputDevice:
+//				break;
 				case kAudioHardwarePropertyDevices:
 					// clear the current Device list, it will be updated next time it is requested.
+					// because we're repopulating all devices, also clear default input and output
 					mDevices.clear();
+					mDefaultInput.reset();
+					mDefaultOutput.reset();
 					mSignalDevicesChanged.emit();
 				break;
 				default:
