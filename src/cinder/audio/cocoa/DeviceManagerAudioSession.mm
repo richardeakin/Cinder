@@ -24,11 +24,12 @@
 #include "cinder/audio/cocoa/DeviceManagerAudioSession.h"
 #include "cinder/audio/Exception.h"
 #include "cinder/CinderAssert.h"
-
+#include "cinder/Log.h"
 #include "cinder/cocoa/CinderCocoa.h"
 
 #include <cmath>
 
+#import <Foundation/Foundation.h>
 #import <AVFoundation/AVAudioSession.h>
 
 #if( __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_6_0 )
@@ -44,7 +45,6 @@
 
 #else
 
-#import <Foundation/NSNotification.h>
 
 @interface AudioSessionInterruptionHandlerImpl : NSObject
 
@@ -77,8 +77,11 @@ DeviceManagerAudioSession::DeviceManagerAudioSession()
 
 DeviceManagerAudioSession::~DeviceManagerAudioSession()
 {
-	if( mSessionInterruptionHandler )
+	if( mSessionInterruptionHandler ) {
+		[[NSNotificationCenter defaultCenter] removeObserver:mSessionInterruptionHandler];
 		[mSessionInterruptionHandler release];
+		mSessionInterruptionHandler = nullptr;
+	}
 }
 
 DeviceRef DeviceManagerAudioSession::getDefaultOutput()
@@ -222,8 +225,12 @@ void DeviceManagerAudioSession::activateSession()
 	AVAudioSession *globalSession = [AVAudioSession sharedInstance];
 
 #if( __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_6_0 )
-	[[NSNotificationCenter defaultCenter] addObserver:getSessionInterruptionHandler() selector:@selector(notifyInterrupted:) name:AVAudioSessionInterruptionNotification object:nil];
+	[[NSNotificationCenter defaultCenter] addObserver:getSessionInterruptionHandler()
+											 selector:@selector(notifyInterrupted:)
+												 name:AVAudioSessionInterruptionNotification
+											   object:globalSession];
 #else
+#error "blarg, don't go this way"
 	globalSession.delegate = getSessionInterruptionHandler();
 #endif
 
@@ -274,12 +281,15 @@ AudioSessionInterruptionHandlerImpl *DeviceManagerAudioSession::getSessionInterr
 
 - (void)notifyInterrupted:(NSNotification*)notification
 {
-	NSUInteger interruptionType = (NSUInteger)[[notification userInfo] objectForKey:AVAudioSessionInterruptionTypeKey];
+	NSDictionary *interruptionDictionary = [notification userInfo];
 
-//	if( interruptionType == AVAudioSessionInterruptionTypeBegan )
-//		 CI_LOG_V( "interruption began" );
-//	else
-//		 CI_LOG_V( "interruption ended" );
+	NSNumber *interruptionType = (NSNumber *)[interruptionDictionary objectForKey:AVAudioSessionInterruptionTypeKey];
+	NSUInteger interruptionTypeIntValue = [interruptionType integerValue];
+
+	if( interruptionTypeIntValue == AVAudioSessionInterruptionTypeBegan )
+		 CI_LOG_V( "interruption began" );
+	else
+		 CI_LOG_V( "interruption ended" );
 }
 
 #endif // iOS pre 6
