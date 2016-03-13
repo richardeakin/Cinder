@@ -23,7 +23,19 @@ set( SRC_FILES
 	${SRC_DIR}/BasicApp.cpp
 )
 
-add_executable( "${EXE_NAME}" ${SRC_FILES} )
+
+if( CINDER_TARGET )
+	string( TOLOWER "${CINDER_TARGET}" CINDER_TARGET_LOWER )
+    if( "macosx" STREQUAL "${CINDER_TARGET_LOWER}" )
+        add_executable( "${EXE_NAME}" MACOSX_BUNDLE ${SRC_FILES} ${CINDER_ICON_PATH} )
+        set_source_files_properties( ${CINDER_ICON_PATH} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources" )
+        set_target_properties( "${EXE_NAME}" PROPERTIES MACOSX_BUNDLE_NAME "${EXE_NAME}" MACOSX_BUNDLE_ICON_FILE "${CINDER_ICON_NAME}" )
+    else()
+        add_executable( "${EXE_NAME}" ${SRC_FILES} )
+    endif()
+endif()
+
+
 
 target_include_directories(
 	"${EXE_NAME}"
