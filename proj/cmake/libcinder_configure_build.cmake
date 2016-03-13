@@ -99,4 +99,7 @@ else()
 	set( CINDER_ANTTWEAKBAR_ENABLED TRUE )
 endif()
 
+set( ICON_NAME "CinderApp.icns" )
+set( ICON_PATH "${CINDER_ROOT}/samples/data/${ICON_NAME}" )
+
 message( "CINDER_ANTTWEAKBAR_ENABLED: ${CINDER_ANTTWEAKBAR_ENABLED}" )

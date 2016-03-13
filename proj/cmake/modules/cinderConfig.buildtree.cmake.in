@@ -2,4 +2,7 @@ if( NOT TARGET cinder${CINDER_LIB_SUFFIX} )
     include( ${PROJECT_BINARY_DIR}/cinderTargets.cmake )
 endif()
 
+set( CINDER_ICON_NAME @ICON_NAME@ )
+set( CINDER_ICON_PATH @ICON_PATH@ )
+
 
