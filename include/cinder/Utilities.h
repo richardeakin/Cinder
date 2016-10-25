@@ -82,6 +82,9 @@ inline double fromString( const std::string &s ) { return atof( s.c_str() ); }
 
 //! Returns a stack trace (aka backtrace) where \c stackTrace()[0] == caller, \c stackTrace()[1] == caller's parent, etc
 std::vector<std::string> stackTrace();
+//! Returns a stringified stack trace ready for logging, starting at \a startingFrame and printing \a count frames to string (by default, count is the entire stack).
+//! If \a skipPlatformFrames is true (the default), the known platform-specific frames will be skipped.
+std::string stackTraceAsString( size_t startingFrame = 0, size_t count = 0, bool skipPlatformFrames = true );
 
 // ENDIANNESS
 inline int8_t	swapEndian( int8_t val ) { return val; }

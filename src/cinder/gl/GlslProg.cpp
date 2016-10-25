@@ -951,7 +951,8 @@ std::string GlslProg::getShaderLog( GLuint handle ) const
 void GlslProg::logMissingUniform( const std::string &name ) const
 {
 	if( mLoggedUniformNames.count( name ) == 0 ) {
-		CI_LOG_W( "Unknown uniform: \"" << name << "\"" );
+		CI_LOG_W( "Unknown uniform: \"" << name << "\", caller: " << stackTraceAsString( 3, 1 ) );
+		//CI_LOG_W( "Unknown uniform: \"" << name << "\"" );
 		mLoggedUniformNames.insert( name );
 	}
 }
@@ -959,7 +960,7 @@ void GlslProg::logMissingUniform( const std::string &name ) const
 void GlslProg::logMissingUniform( int location ) const
 {
 	if( mLoggedUniformLocations.count( location ) == 0 ) {
-		CI_LOG_W( "Unknown uniform location: \"" << location << "\"" );
+		CI_LOG_W( "Unknown uniform location: \"" << location << "\", caller: " << stackTraceAsString( 3, 1 ) );
 		mLoggedUniformLocations.insert( location );
 	}
 }
@@ -968,7 +969,7 @@ void GlslProg::logUniformWrongType( const std::string &name, GLenum uniformType,
 {
 	if( mLoggedUniformNames.count( name ) == 0 ) {
 		CI_LOG_W("Uniform type mismatch for \"" << name << "\", expected "
-				 << gl::constantToString( uniformType ) << " and received " << userType );
+				 << gl::constantToString( uniformType ) << " and received " << userType << ", caller: " << stackTraceAsString( 3, 1 ) );
 		mLoggedUniformNames.insert( name );
 	}
 }
@@ -1199,7 +1200,7 @@ void GlslProg::uniformBlock( int loc, int binding )
 		}
 	}
 	else {
-		CI_LOG_W( "Uniform block at " << loc << " location not found" );
+		CI_LOG_W( "Uniform block at " << loc << " location not found, caller: " << stackTraceAsString( 3, 1 ) );
 	}
 }
 
@@ -1213,7 +1214,7 @@ void GlslProg::uniformBlock( const std::string &name, GLint binding )
 		}
 	}
 	else {
-		CI_LOG_W( "Uniform block \"" << name << "\" not found" );
+		CI_LOG_W( "Uniform block \"" << name << "\" not found, caller: " << stackTraceAsString( 3, 1 ) );
 	}
 }
 

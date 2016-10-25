@@ -99,6 +99,38 @@ vector<string> stackTrace()
 	return app::Platform::get()->stackTrace();
 }
 
+string stackTraceAsString( size_t startingFrame, size_t count, bool skipPlatformFrames )
+{
+	if( skipPlatformFrames ) {
+#if defined( CINDER_MSW )
+		startingFrame += 4;
+#elif defined( CINDER_COCOA )
+		startingFrame += 3;
+#else
+		// unknown platform, use full stack trace;
+#endif
+	}
+
+	auto st = stackTrace();
+	if( st.empty() )
+		return "(unknown)";
+
+	size_t numFramesToRemove = std::min<size_t>( startingFrame, st.size() );
+	st.erase( st.begin(), st.begin() + numFramesToRemove );
+
+	if( count == 0 )
+		count = st.size();
+
+	string result;
+	for( size_t i = 0; i < count; i++ ) {
+		result += "[" + std::to_string( i ) + "] " + st[i];
+		if( i < count - 1 )
+			result += "\n";
+	}
+
+	return result;
+}
+
 int16_t swapEndian( int16_t val ) { 
 	return (int16_t) (	(((uint16_t) (val) & (uint16_t) 0x00ffU) << 8) | 
 						(((uint16_t) (val) & (uint16_t) 0xff00U) >> 8) );

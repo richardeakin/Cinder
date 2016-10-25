@@ -108,6 +108,7 @@ void checkError()
 {
 	GLenum errorFlag = getError();
 	if( errorFlag != GL_NO_ERROR ) {
+		// TODO: use stackTraceAsString()
 		CI_LOG_E( "glGetError flag set: " << getErrorString( errorFlag ) );
 		CI_ASSERT( 0 );
 	}
