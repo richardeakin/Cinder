@@ -320,9 +320,9 @@ void FileWatcher::configureWatchPolling()
 	if( mConnectToAppUpdateEnabled && ! mConnectionAppUpdate.isConnected() && app::App::get() )
 		mConnectionAppUpdate = app::App::get()->getSignalUpdate().connect( bind( &FileWatcher::update, this ) );
 
-	if( ! mThread ) {
+	if( ! mThread.joinable() ) {
 		mThreadShouldQuit = false;
-		mThread.reset( new thread( std::bind( &FileWatcher::threadEntry, this ) ) );
+		mThread = thread( &FileWatcher::threadEntry, this );
 	}
 }
 
@@ -331,9 +331,8 @@ void FileWatcher::stopWatchPolling()
 	mConnectionAppUpdate.disconnect();
 
 	mThreadShouldQuit = true;
-	if( mThread && mThread->joinable() ) {
-		mThread->join();
-		mThread = nullptr;
+	if( mThread.joinable() ) {
+		mThread.join();
 	}
 }
 
