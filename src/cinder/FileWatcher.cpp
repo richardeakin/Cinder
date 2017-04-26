@@ -266,15 +266,15 @@ signals::Connection FileWatcher::watch( const vector<fs::path> &filePaths, const
 
 signals::Connection FileWatcher::watch( const vector<fs::path> &filePaths, const Options &options, const function<void ( const WatchEvent& )> &callback )
 {
-	auto watch = new Watch( filePaths, options.mCallOnWatch );
+	auto watch = std::unique_ptr<Watch>(new Watch( filePaths, options.mCallOnWatch ));
 	auto conn = watch->connect( callback );
 
 	lock_guard<recursive_mutex> lock( mMutex );
 
-	mWatchList.emplace_back( watch );
+	mWatchList.push_back( std::move(watch) );
 
 	if( options.mCallOnWatch )
-		watch->emitCallback();
+		mWatchList.back()->emitCallback();
 
 	configureWatchPolling();
 
