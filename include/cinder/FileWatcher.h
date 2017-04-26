@@ -86,7 +86,7 @@ class CI_API FileWatcher : private Noncopyable {
 	//! Returns the global instance of FileWatcher
 	static const FileWatcherRef&	instance();
 	//! Creates and returns a new FileWatcher within a shared_ptr.
-	static FileWatcherRef			create(); 
+	static FileWatcherRef			create();
 
 	//! Enables or disables file watching.
 	void	setWatchingEnabled( bool enable );
@@ -136,7 +136,7 @@ class CI_API FileWatcher : private Noncopyable {
 	void	stopWatchPolling();
 	void	threadEntry();
 
-	std::list<std::unique_ptr<Watch>>	mWatchList;
+	std::vector<std::unique_ptr<Watch>>	mWatchList;
 	std::recursive_mutex				mMutex;
 	std::unique_ptr<std::thread>		mThread;
 	std::atomic<bool>					mThreadShouldQuit;

@@ -45,7 +45,7 @@ class Watch : public std::enable_shared_from_this<Watch>, private Noncopyable {
 	void checkCurrent();
 	//! Remove any watches for \a filePath. If it is the last file associated with this Watch, discard
 	void unwatch( const fs::path &filePath );
-	//! Emit the signal callback. 
+	//! Emit the signal callback.
 	void emitCallback();
 	//! Enables or disables a Watch
 	void setEnabled( bool enable, const fs::path &filePath );
@@ -162,14 +162,14 @@ void Watch::checkCurrent()
 	}
 }
 
-void Watch::unwatch( const fs::path &filePath ) 
+void Watch::unwatch( const fs::path &filePath )
 {
 	mWatchItems.erase( remove_if( mWatchItems.begin(), mWatchItems.end(),
 		[&filePath]( const WatchItem &item ) {
 			return item.mFilePath == filePath;
 		} ),
 		mWatchItems.end() );
-	
+
 	if( mWatchItems.empty() )
 		markDiscarded();
 }
@@ -187,13 +187,13 @@ void Watch::setEnabled( bool enable, const fs::path &filePath )
 	}
 }
 
-void Watch::emitCallback() 
+void Watch::emitCallback()
 {
 	WatchEvent event( mModifiedFilePaths );
 
 	mSignalChanged.emit( event );
 	setNeedsCallback( false );
-} 
+}
 
 // ----------------------------------------------------------------------------------------------------
 // FileWatcher
@@ -248,7 +248,7 @@ void FileWatcher::setConnectToAppUpdateEnabled( bool enable )
 }
 
 signals::Connection FileWatcher::watch( const fs::path &filePath, const function<void ( const WatchEvent& )> &callback )
-{ 
+{
 	vector<fs::path> filePaths = { filePath };
 	return watch( filePaths, Options(), callback );
 }
@@ -260,7 +260,7 @@ signals::Connection FileWatcher::watch( const fs::path &filePath, const Options 
 }
 
 signals::Connection FileWatcher::watch( const vector<fs::path> &filePaths, const function<void ( const WatchEvent& )> &callback )
-{ 
+{
 	return watch( filePaths, Options(), callback );
 }
 
@@ -322,7 +322,7 @@ void FileWatcher::configureWatchPolling()
 
 	if( ! mThread ) {
 		mThreadShouldQuit = false;
-		mThread.reset( new thread( std::bind( &FileWatcher::threadEntry, this ) ) ); 
+		mThread.reset( new thread( std::bind( &FileWatcher::threadEntry, this ) ) );
 	}
 }
 
@@ -360,8 +360,9 @@ void FileWatcher::threadEntry()
 						watch->checkCurrent();
 
 						// If the Watch needs a callback, move it to the front of the list
-						if( watch->needsCallback() && it != mWatchList.begin() ) {							
-							mWatchList.splice( mWatchList.begin(), mWatchList, it );
+						if( watch->needsCallback() && it != mWatchList.begin() ) {
+							std::rotate(mWatchList.begin(), it - 1, it);
+							//mWatchList.splice( mWatchList.begin(), mWatchList, it );
 						}
 					}
 
