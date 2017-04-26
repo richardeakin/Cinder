@@ -346,32 +346,32 @@ void FileWatcher::threadEntry()
 
 			LOG_UPDATE( "\t - updating watches, elapsed seconds: " << app::getElapsedSeconds() );
 
-			try {
-				for( auto it = mWatchList.begin(); it != mWatchList.end(); /* */ ) {
-					const auto &watch = *it;
+			mWatchList.erase(
+				std::remove_if(
+					mWatchList.begin(),
+					mWatchList.end(),
+					[](const std::unique_ptr<Watch>& watch) {return watch->isDiscarded(); }
+				),
+				mWatchList.end()
+			);
 
-					// erase discarded
-					if( watch->isDiscarded() ) {
-						it = mWatchList.erase( it );
-						continue;
-					}
+			try {
+				for (auto& watch : mWatchList) {
 					// check if Watch's target has been modified and needs a callback, if not already marked.
 					if( ! watch->needsCallback() ) {
 						watch->checkCurrent();
-
-						// If the Watch needs a callback, move it to the front of the list
-						if( watch->needsCallback() && it != mWatchList.begin() ) {
-							std::rotate(mWatchList.begin(), it - 1, it);
-							//mWatchList.splice( mWatchList.begin(), mWatchList, it );
-						}
 					}
-
-					++it;
 				}
 			}
 			catch( fs::filesystem_error & ) {
 				// some file probably got locked by the system. Do nothing this update frame, we'll check again next
 			}
+
+			std::stable_partition(
+				mWatchList.begin(),
+				mWatchList.end(),
+				[](const std::unique_ptr<Watch>& watch) { return watch->needsCallback(); }
+			);
 		}
 
 		this_thread::sleep_for( chrono::duration<double>( mThreadUpdateInterval ) );
