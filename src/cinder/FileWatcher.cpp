@@ -285,6 +285,7 @@ void FileWatcher::unwatch( const fs::path &filePath )
 {
 	auto fullPath = findFullFilePath( filePath );
 
+	lock_guard<recursive_mutex> lock(mMutex);
 	for( auto &watch : mWatchList ) {
 		watch->unwatch( fullPath );
 	}
@@ -292,6 +293,7 @@ void FileWatcher::unwatch( const fs::path &filePath )
 
 void FileWatcher::unwatch( const vector<fs::path> &filePaths )
 {
+	lock_guard<recursive_mutex> lock(mMutex);
 	for( const auto &filePath : filePaths ) {
 		unwatch( filePath );
 	}
@@ -301,6 +303,7 @@ void FileWatcher::enable( const fs::path &filePath )
 {
 	auto fullPath = findFullFilePath( filePath );
 
+	lock_guard<recursive_mutex> lock(mMutex);
 	for( auto &watch : mWatchList ) {
 		watch->setEnabled( true, fullPath );
 	}
@@ -310,6 +313,7 @@ void FileWatcher::disable( const fs::path &filePath )
 {
 	auto fullPath = findFullFilePath( filePath );
 
+	lock_guard<recursive_mutex> lock(mMutex);
 	for( auto &watch : mWatchList ) {
 		watch->setEnabled( false, fullPath );
 	}
@@ -366,7 +370,7 @@ void FileWatcher::threadEntry()
 				// some file probably got locked by the system. Do nothing this update frame, we'll check again next
 			}
 
-			std::stable_partition(
+			std::partition(
 				mWatchList.begin(),
 				mWatchList.end(),
 				[](const std::unique_ptr<Watch>& watch) { return watch->needsCallback(); }
@@ -401,6 +405,7 @@ void FileWatcher::update()
 
 const size_t FileWatcher::getNumWatchedFiles() const
 {
+	lock_guard<recursive_mutex> lock(mMutex);
 	size_t result = 0;
 	for( const auto &w : mWatchList ) {
 		result += w->getItems().size();

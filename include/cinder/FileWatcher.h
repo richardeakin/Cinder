@@ -137,7 +137,7 @@ class CI_API FileWatcher : private Noncopyable {
 	void	threadEntry();
 
 	std::vector<std::unique_ptr<Watch>>	mWatchList;
-	std::recursive_mutex				mMutex;
+	mutable std::recursive_mutex				mMutex;
 	std::thread							mThread;
 	std::atomic<bool>					mThreadShouldQuit;
 	std::atomic<double>					mThreadUpdateInterval		= { 0.02 };
