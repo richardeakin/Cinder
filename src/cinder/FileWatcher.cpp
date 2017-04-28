@@ -45,7 +45,7 @@ class Watch : public std::enable_shared_from_this<Watch>, private Noncopyable {
 	void checkCurrent();
 	//! Remove any watches for \a filePath. If it is the last file associated with this Watch, discard
 	void unwatch( const fs::path &filePath );
-	//! Emit the signal callback. 
+	//! Emit the signal callback.
 	void emitCallback();
 	//! Enables or disables a Watch
 	void setEnabled( bool enable, const fs::path &filePath );
@@ -162,14 +162,14 @@ void Watch::checkCurrent()
 	}
 }
 
-void Watch::unwatch( const fs::path &filePath ) 
+void Watch::unwatch( const fs::path &filePath )
 {
 	mWatchItems.erase( remove_if( mWatchItems.begin(), mWatchItems.end(),
 		[&filePath]( const WatchItem &item ) {
 			return item.mFilePath == filePath;
 		} ),
 		mWatchItems.end() );
-	
+
 	if( mWatchItems.empty() )
 		markDiscarded();
 }
@@ -187,13 +187,13 @@ void Watch::setEnabled( bool enable, const fs::path &filePath )
 	}
 }
 
-void Watch::emitCallback() 
+void Watch::emitCallback()
 {
 	WatchEvent event( mModifiedFilePaths );
 
 	mSignalChanged.emit( event );
 	setNeedsCallback( false );
-} 
+}
 
 // ----------------------------------------------------------------------------------------------------
 // FileWatcher
@@ -248,7 +248,7 @@ void FileWatcher::setConnectToAppUpdateEnabled( bool enable )
 }
 
 signals::Connection FileWatcher::watch( const fs::path &filePath, const function<void ( const WatchEvent& )> &callback )
-{ 
+{
 	vector<fs::path> filePaths = { filePath };
 	return watch( filePaths, Options(), callback );
 }
@@ -260,21 +260,21 @@ signals::Connection FileWatcher::watch( const fs::path &filePath, const Options 
 }
 
 signals::Connection FileWatcher::watch( const vector<fs::path> &filePaths, const function<void ( const WatchEvent& )> &callback )
-{ 
+{
 	return watch( filePaths, Options(), callback );
 }
 
 signals::Connection FileWatcher::watch( const vector<fs::path> &filePaths, const Options &options, const function<void ( const WatchEvent& )> &callback )
 {
-	auto watch = new Watch( filePaths, options.mCallOnWatch );
+	auto watch = std::unique_ptr<Watch>(new Watch( filePaths, options.mCallOnWatch ));
 	auto conn = watch->connect( callback );
 
 	lock_guard<recursive_mutex> lock( mMutex );
 
-	mWatchList.emplace_back( watch );
+	mWatchList.push_back( std::move(watch) );
 
 	if( options.mCallOnWatch )
-		watch->emitCallback();
+		mWatchList.back()->emitCallback();
 
 	configureWatchPolling();
 
@@ -285,6 +285,7 @@ void FileWatcher::unwatch( const fs::path &filePath )
 {
 	auto fullPath = findFullFilePath( filePath );
 
+	lock_guard<recursive_mutex> lock(mMutex);
 	for( auto &watch : mWatchList ) {
 		watch->unwatch( fullPath );
 	}
@@ -292,6 +293,7 @@ void FileWatcher::unwatch( const fs::path &filePath )
 
 void FileWatcher::unwatch( const vector<fs::path> &filePaths )
 {
+	lock_guard<recursive_mutex> lock(mMutex);
 	for( const auto &filePath : filePaths ) {
 		unwatch( filePath );
 	}
@@ -301,6 +303,7 @@ void FileWatcher::enable( const fs::path &filePath )
 {
 	auto fullPath = findFullFilePath( filePath );
 
+	lock_guard<recursive_mutex> lock(mMutex);
 	for( auto &watch : mWatchList ) {
 		watch->setEnabled( true, fullPath );
 	}
@@ -310,6 +313,7 @@ void FileWatcher::disable( const fs::path &filePath )
 {
 	auto fullPath = findFullFilePath( filePath );
 
+	lock_guard<recursive_mutex> lock(mMutex);
 	for( auto &watch : mWatchList ) {
 		watch->setEnabled( false, fullPath );
 	}
@@ -320,9 +324,9 @@ void FileWatcher::configureWatchPolling()
 	if( mConnectToAppUpdateEnabled && ! mConnectionAppUpdate.isConnected() && app::App::get() )
 		mConnectionAppUpdate = app::App::get()->getSignalUpdate().connect( bind( &FileWatcher::update, this ) );
 
-	if( ! mThread ) {
+	if( ! mThread.joinable() ) {
 		mThreadShouldQuit = false;
-		mThread.reset( new thread( std::bind( &FileWatcher::threadEntry, this ) ) ); 
+		mThread = thread( &FileWatcher::threadEntry, this );
 	}
 }
 
@@ -331,9 +335,8 @@ void FileWatcher::stopWatchPolling()
 	mConnectionAppUpdate.disconnect();
 
 	mThreadShouldQuit = true;
-	if( mThread && mThread->joinable() ) {
-		mThread->join();
-		mThread = nullptr;
+	if( mThread.joinable() ) {
+		mThread.join();
 	}
 }
 
@@ -346,31 +349,32 @@ void FileWatcher::threadEntry()
 
 			LOG_UPDATE( "\t - updating watches, elapsed seconds: " << app::getElapsedSeconds() );
 
-			try {
-				for( auto it = mWatchList.begin(); it != mWatchList.end(); /* */ ) {
-					const auto &watch = *it;
+			mWatchList.erase(
+				std::remove_if(
+					mWatchList.begin(),
+					mWatchList.end(),
+					[](const std::unique_ptr<Watch>& watch) {return watch->isDiscarded(); }
+				),
+				mWatchList.end()
+			);
 
-					// erase discarded
-					if( watch->isDiscarded() ) {
-						it = mWatchList.erase( it );
-						continue;
-					}
+			try {
+				for (auto& watch : mWatchList) {
 					// check if Watch's target has been modified and needs a callback, if not already marked.
 					if( ! watch->needsCallback() ) {
 						watch->checkCurrent();
-
-						// If the Watch needs a callback, move it to the front of the list
-						if( watch->needsCallback() && it != mWatchList.begin() ) {							
-							mWatchList.splice( mWatchList.begin(), mWatchList, it );
-						}
 					}
-
-					++it;
 				}
 			}
 			catch( fs::filesystem_error & ) {
 				// some file probably got locked by the system. Do nothing this update frame, we'll check again next
 			}
+
+			std::partition(
+				mWatchList.begin(),
+				mWatchList.end(),
+				[](const std::unique_ptr<Watch>& watch) { return watch->needsCallback(); }
+			);
 		}
 
 		this_thread::sleep_for( chrono::duration<double>( mThreadUpdateInterval ) );
@@ -390,17 +394,20 @@ void FileWatcher::update()
 
 	// Watches are sorted so that all that need a callback are in the beginning.
 	// So break when we hit the first one that doesn't need a callback
-	for( const auto &watch : mWatchList ) {
-
-		if( ! watch->needsCallback() )
+	// As each callback can modify the watchlist which would invalidate some / all iterators,
+	// we have to used index based looping instead of e.g. range based for loop
+	for (std::size_t i = 0; i < mWatchList.size(); ++i) {
+		if (!mWatchList[i]->needsCallback())
 			break;
 
-		watch->emitCallback();
+		mWatchList[i]->emitCallback();
+
 	}
 }
 
 const size_t FileWatcher::getNumWatchedFiles() const
 {
+	lock_guard<recursive_mutex> lock(mMutex);
 	size_t result = 0;
 	for( const auto &w : mWatchList ) {
 		result += w->getItems().size();
