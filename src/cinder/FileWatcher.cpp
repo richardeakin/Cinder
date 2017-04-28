@@ -394,12 +394,14 @@ void FileWatcher::update()
 
 	// Watches are sorted so that all that need a callback are in the beginning.
 	// So break when we hit the first one that doesn't need a callback
-	for( const auto &watch : mWatchList ) {
-
-		if( ! watch->needsCallback() )
+	// As each callback can modify the watchlist which would invalidate some / all iterators,
+	// we have to used index based looping instead of e.g. range based for loop
+	for (std::size_t i = 0; i < mWatchList.size(); ++i) {
+		if (!mWatchList[i]->needsCallback())
 			break;
 
-		watch->emitCallback();
+		mWatchList[i]->emitCallback();
+
 	}
 }
 
