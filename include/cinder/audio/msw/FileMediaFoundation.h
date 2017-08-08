@@ -80,7 +80,7 @@ class SourceFileMediaFoundation : public SourceFile {
 //! Currently can encode WAV in 16-bit signed or 32-bit floating point samples (file extension is ignored).
 class TargetFileMediaFoundation : public TargetFile {
   public:
-	TargetFileMediaFoundation( const DataTargetRef &dataTarget, size_t sampleRate, size_t numChannels, SampleType sampleType, const std::string &extension );
+	TargetFileMediaFoundation( const DataTargetRef &dataTarget, size_t sampleRate, size_t numChannels, SampleType sampleType, size_t sampleRateNative, const std::string &extension );
 	virtual ~TargetFileMediaFoundation();
 
 	void performWrite( const Buffer *buffer, size_t numFrames, size_t frameOffset ) override;

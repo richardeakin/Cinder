@@ -406,8 +406,8 @@ vector<std::string> SourceFileMediaFoundation::getSupportedExtensions()
 // TargetFileMediaFoundation
 // ----------------------------------------------------------------------------------------------------
 
-TargetFileMediaFoundation::TargetFileMediaFoundation( const DataTargetRef &dataTarget, size_t sampleRate, size_t numChannels, SampleType sampleType, const std::string &extension )
-	: TargetFile( sampleRate, numChannels, sampleType ), mStreamIndex( 0 )
+TargetFileMediaFoundation::TargetFileMediaFoundation( const DataTargetRef &dataTarget, size_t sampleRate, size_t numChannels, SampleType sampleType, size_t sampleRateNative, const std::string &extension )
+	: TargetFile( sampleRate, numChannels, sampleType, sampleRateNative ), mStreamIndex( 0 )
 {
 	MediaFoundationInitializer::initMediaFoundation();
 
@@ -425,7 +425,7 @@ TargetFileMediaFoundation::TargetFileMediaFoundation( const DataTargetRef &dataT
 	mSampleSize = getBytesPerSample( mSampleType );
 	const auto bitsPerSample = 8 * mSampleSize;
 	const auto blockAlignment = mNumChannels * mSampleSize;
-	const auto averageBytesPerSecond = mSampleRate * blockAlignment;
+	const auto averageBytesPerSecond = mSampleRateNative * blockAlignment;
 
 	// Set the output media type.
 
@@ -441,7 +441,7 @@ TargetFileMediaFoundation::TargetFileMediaFoundation( const DataTargetRef &dataT
 	hr = mediaType->SetGUID( MF_MT_SUBTYPE, audioFormat );
 	CI_ASSERT( hr == S_OK );
 
-	hr = mediaType->SetUINT32( MF_MT_AUDIO_SAMPLES_PER_SECOND, static_cast<UINT32>( mSampleRate ) );
+	hr = mediaType->SetUINT32( MF_MT_AUDIO_SAMPLES_PER_SECOND, static_cast<UINT32>( mSampleRateNative ) );
 	CI_ASSERT( hr == S_OK );
 
 	hr = mediaType->SetUINT32( MF_MT_AUDIO_BITS_PER_SAMPLE, static_cast<UINT32>( bitsPerSample ) );
@@ -487,12 +487,12 @@ void TargetFileMediaFoundation::performWrite( const Buffer *buffer, size_t numFr
 
 	auto samplePtr = ci::msw::makeComUnique( mediaSample );
 
-	double lengthSeconds = (double)numFrames / (double)mSampleRate;
+	double lengthSeconds = (double)numFrames / (double)mSampleRateNative;
 	const LONGLONG sampleDuration = secondsToNanoSeconds( lengthSeconds );
 	hr = mediaSample->SetSampleDuration( sampleDuration );
 	CI_ASSERT( hr == S_OK );
 
-	double currentTimeSeconds = (double)frameOffset / (double)mSampleRate;
+	double currentTimeSeconds = (double)frameOffset / (double)mSampleRateNative;
 	const LONGLONG sampleTime = secondsToNanoSeconds( currentTimeSeconds );
 	hr = mediaSample->SetSampleTime( sampleTime );
 	CI_ASSERT( hr == S_OK );

@@ -623,10 +623,11 @@ void SamplePlayerNodeTestApp::testWrite()
 
 	try {
 		const string fileName = "out.wav";
-		audio::TargetFileRef target = audio::TargetFile::create( fileName, mSourceFile->getSampleRate(), mSourceFile->getNumChannels() ); // INT_16
+		const size_t sampleRateNative = 44100;
+		audio::TargetFileRef target = audio::TargetFile::create( fileName, mSourceFile->getSampleRate(), mSourceFile->getNumChannels(), audio::SampleType::INT_16, sampleRateNative ); // INT_16
 		//	audio::TargetFileRef target = audio::TargetFile::create( fileName, mSourceFile->getSampleRate(), mSourceFile->getNumChannels(), audio::SampleType::FLOAT_32 );
 
-		CI_LOG_V( "writing " << audioBuffer->getNumFrames() << " frames at samplerate: " << mSourceFile->getSampleRate() << ", num channels: " << mSourceFile->getNumChannels() );
+		CI_LOG_V( "writing " << audioBuffer->getNumFrames() << " frames at source samplerate: " << mSourceFile->getSampleRate() << ", target native samplerate: " << target->getSampleRateNative() << ", num channels: " << mSourceFile->getNumChannels() );
 		target->write( audioBuffer.get() );
 		CI_LOG_V( "...complete." );
 
