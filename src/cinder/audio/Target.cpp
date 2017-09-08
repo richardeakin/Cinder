@@ -116,7 +116,7 @@ void TargetFile::write( const Buffer *buffer, size_t numFrames, size_t frameOffs
 		// process buffer in chunks of mMaxFramesPerConversion
 		while( currFrame != lastFrame ) {
 			auto numSourceFrames = std::min( mMaxFramesPerConversion, lastFrame - currFrame );
-			auto numDestFrames = size_t( numSourceFrames * (float)getSampleRateNative() / (float)getSampleRate() );
+			auto numDestFrames = (size_t)std::ceil( numSourceFrames * (float)getSampleRateNative() / (float)getSampleRate() );
 
 			// copy buffer into temporary buffer to remove frame offset (needed for mConverter->convert)
 			mConverterSourceBuffer.copyOffset( *buffer, numSourceFrames, 0, currFrame );
