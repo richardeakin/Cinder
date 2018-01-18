@@ -178,26 +178,20 @@ void MotionBlurVelocityBufferApp::createBuffers()
 
 void MotionBlurVelocityBufferApp::loadShaders()
 {
-	try
-	{
-		mVelocityProg = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "velocity.vs" ) )
-						.fragment( loadAsset( "velocity.fs" ) ) );
-		mMotionBlurProg = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "passthrough.vs" ) )
-								.fragment( loadAsset( "motion-blur.fs" ) ) );
-		mVelocityRenderProg	= gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "passthrough.vs" ) )
-								.fragment( loadAsset( "velocity-render.fs" ) ) );
-		mTileProg = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "passthrough.vs" ) )
-					.fragment( loadAsset( "tilemax.fs" ) ) );
-		mNeighborProg = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "passthrough.vs" ) )
-						.fragment( loadAsset( "neighbormax.fs" ) ) );
+	try {
+		mVelocityProg = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "velocity.vs" ) ).fragment( loadAsset( "velocity.fs" ) ) );
+		mMotionBlurProg = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "passthrough.vs" ) ).fragment( loadAsset( "motion-blur.fs" ) ) );
+		mVelocityRenderProg	= gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "passthrough.vs" ) ).fragment( loadAsset( "velocity-render.fs" ) ) );
+		mTileProg = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "passthrough.vs" ) ).fragment( loadAsset( "tilemax.fs" ) ) );
+		mNeighborProg = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "passthrough.vs" ) ).fragment( loadAsset( "neighbormax.fs" ) ) );
+
+		CI_LOG_I( "reloaded shaders." );
 	}
-	catch( ci::gl::GlslProgCompileExc &exc )
-	{
-		CI_LOG_E( "Shader load error: " << exc.what() );
+	catch( ci::gl::GlslProgCompileExc &exc ) {
+		CI_LOG_EXCEPTION( "Shader load error: ", exc );
 	}
-	catch( ci::Exception &exc )
-	{
-		CI_LOG_E( "Shader load error: " << exc.what() );
+	catch( ci::Exception &exc )	{
+		CI_LOG_EXCEPTION( "Shader load error: ", exc );
 	}
 }
 
