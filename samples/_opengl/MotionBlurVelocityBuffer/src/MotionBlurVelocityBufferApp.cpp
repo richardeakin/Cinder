@@ -21,6 +21,7 @@
 
 #include "cinder/Log.h"
 #include "cinder/params/Params.h"
+#include "cinder/CameraUi.h"
 
 #include "BlurrableThings.h"
 
@@ -78,11 +79,16 @@ class MotionBlurVelocityBufferApp : public App {
 
 	int						mTileSize = 20;		// TileMax program samples a TileSize x TileSize region of pixels for each of its output pixels.
 	int						mSampleCount = 31;	// Number of samples used when calculating motion blur. Low-movement areas skip calculation.
-	float					mAnimationSpeed = 1.0f;
+	float					mAnimationSpeed = 0.0f;
 	float					mBlurNoise = 0.0f;
 	bool					mBlurEnabled = true;
 	bool					mPaused = false;
 	bool					mDisplayVelocityBuffers = true;
+	bool					mEnableCameraMotionBlur = true;
+
+	ci::mat4	mPrevViewProjectionMatrix;
+	CameraPersp	mCam;
+	CameraUi	mCamUi;
 };
 
 void MotionBlurVelocityBufferApp::setup()
@@ -95,15 +101,23 @@ void MotionBlurVelocityBufferApp::setup()
 	createBuffers();
 	loadShaders();
 
+	vec3 eye = { 0, 0, 100 };
+	vec3 target = { 0, 0, 0 };
+	mCam.setPerspective( 45.0f, app::getWindowAspectRatio(), 0.1f, 1000.0f );
+	mCam.lookAt( eye, target, vec3( 0, 1, 0 ) );
+
+	mCamUi = CameraUi( &mCam, getWindow(), -1 );
+
 #if ! defined( CINDER_ANDROID )
 	mParams = params::InterfaceGl::create( "Motion Blur Options", ivec2( 250, 300 ) );
 	mParams->addParam( "Average GPU Draw (ms)", &mAverageGpuTime );
 	mParams->addParam( "Average CPU Draw (ms)", &mAverageCpuTime );
 	mParams->addSeparator();
 	mParams->addParam( "Enable Blur", &mBlurEnabled );
+	mParams->addParam( "Camera Blur", &mEnableCameraMotionBlur );
 	mParams->addParam( "Show Velocity Buffers", &mDisplayVelocityBuffers );
 	mParams->addParam( "Pause Animation", &mPaused );
-	mParams->addParam( "Animation Speed", &mAnimationSpeed ).min( 0.05f ).step( 0.2f );
+	mParams->addParam( "Animation Speed", &mAnimationSpeed ).min( 0.0f ).step( 0.2f );
 	mParams->addParam( "Max Samples", &mSampleCount ).min( 1 ).step( 2 );
 	mParams->addParam( "Blur Noise", &mBlurNoise ).min( 0.0f ).step( 0.01f );
 #endif
@@ -117,14 +131,15 @@ void MotionBlurVelocityBufferApp::createGeometry()
 {
 	for( int i = 0; i < 20; ++i )
 	{	// create some randomized geometry
-		vec3 pos = vec3( randFloat( 200.0f, getWindowWidth() - 200.0f ), randFloat( 150.0f, getWindowHeight() - 150.0f ), randFloat( -50.0f, 10.0f ) );
-		float base = randFloat( 50.0f, 100.0f );
-		float height = randFloat( 100.0f, 300.0f );
+		vec3 bb = { 10, 10, 10 };
+		vec3 pos = vec3( randFloat( - bb.x, bb.x ), randFloat( - bb.y, bb.y ), randFloat( -bb.z, bb.z ) );
+		float base = randFloat( 2, 5 );
+		float height = randFloat( 4, 8 );
 
 		auto mesh = make_shared<BlurrableMesh>( gl::VboMesh::create( geom::Cone().height( height ).base( base ) ), pos );
 		mesh->setAxis( randVec3() );
 		mesh->setColor( ColorA( CM_HSV, randFloat( 0.05f, 0.33f ), 1.0f, 1.0f ) );
-		mesh->setOscillation( vec3( randFloat( -150.0f, 150.0f ), randFloat( -300.0f, 300.0f ), randFloat( -500.0f, 200.0f ) ) );
+		mesh->setOscillation( vec3( randFloat( -250.0f, 250.0f ), randFloat( -300.0f, 300.0f ), randFloat( -500.0f, 200.0f ) ) * 0.2f );
 		mesh->setTheta( randFloat( M_PI * 2 ) );
 
 		mMeshes.push_back( mesh );
@@ -223,8 +238,21 @@ void MotionBlurVelocityBufferApp::fillGBuffer()
 	gl::ScopedBlendAlpha blend;
 	gl::clear( ColorA( 0.0f, 0.0f, 0.0f, 0.0f ) );
 
+	gl::ScopedViewport viewport( mGBuffer->getSize() );
+	gl::ScopedMatrices matrices;
+	gl::setMatrices( mCam );
+
+
 	gl::ScopedGlslProg prog( mVelocityProg );
 	mVelocityProg->uniform( "uViewProjection", gl::getProjectionMatrix() * gl::getViewMatrix() );
+	if( mEnableCameraMotionBlur ) {
+		mVelocityProg->uniform( "uPrevViewProjection", mPrevViewProjectionMatrix );
+		mPrevViewProjectionMatrix = gl::getProjectionMatrix() * gl::getViewMatrix();
+	}
+	else {
+		// use current view projection
+		mVelocityProg->uniform( "uPrevViewProjection", gl::getProjectionMatrix() * gl::getViewMatrix() );
+	}
 
 	for( auto &mesh : mMeshes )
 	{
@@ -243,7 +271,9 @@ void MotionBlurVelocityBufferApp::dilateVelocity()
 	gl::ScopedFramebuffer fbo( mVelocityDilationBuffer );
 	gl::ScopedViewport viewport( ivec2( 0, 0 ), mVelocityDilationBuffer->getSize() );
 	gl::ScopedMatrices	matrices;
-	gl::setMatricesWindowPersp( mVelocityDilationBuffer->getSize() );
+	//gl::setMatricesWindowPersp( mVelocityDilationBuffer->getSize() );
+	gl::setMatrices( mCam );
+
 
 	{ // downsample velocity into tilemax
 		gl::ScopedTextureBind tex( mGBuffer->getTexture2d( G_VELOCITY ), 0 );
@@ -294,11 +324,12 @@ void MotionBlurVelocityBufferApp::draw()
 	gl::ScopedViewport viewport( vec2(0), getWindowSize() );
 	gl::ScopedBlend blend(false);
 
-	gl::draw( mBackground, getWindowBounds() );
+	//gl::draw( mBackground, getWindowBounds() );
 
 	fillGBuffer();
 
 	if( ! mBlurEnabled ) {
+
 		gl::ScopedBlendAlpha blend;
 		gl::draw( mGBuffer->getColorTexture() );
 	}

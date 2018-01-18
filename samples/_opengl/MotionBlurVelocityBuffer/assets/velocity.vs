@@ -7,6 +7,7 @@ in vec3 ciNormal;
 uniform mat4 uModelMatrix;
 uniform mat4 uPrevModelMatrix;
 uniform mat4 uViewProjection;
+uniform mat4 uPrevViewProjection;
 
 smooth out vec4 vPosition;
 smooth out vec4 vPrevPosition;
@@ -15,7 +16,7 @@ smooth out vec3 vNormal;
 
 void main(void) {
   vPosition = uViewProjection * uModelMatrix * ciPosition;
-  vPrevPosition = uViewProjection * uPrevModelMatrix * ciPosition;
+  vPrevPosition = uPrevViewProjection * uPrevModelMatrix * ciPosition;
 
   vColor = ciColor;
 
