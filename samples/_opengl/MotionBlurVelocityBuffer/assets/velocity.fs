@@ -8,7 +8,8 @@ smooth in vec3 vNormal;
 layout (location = 0) out vec4 fColor;
 layout (location = 1) out vec4 fVelocity;
 
-void main(void) {
+void main(void)
+{
 	// Place each position in range [0.0,1.0].
 	vec2 a = (vPosition.xy / vPosition.w) * 0.5 + 0.5;
 	vec2 b = (vPrevPosition.xy / vPrevPosition.w) * 0.5 + 0.5;
@@ -18,9 +19,8 @@ void main(void) {
 	// Using vec4 and writing 1.0 to unused channels fixes the issue.
 	fVelocity = vec4(a - b, 1.0, 1.0);
 
-	fColor = vColor;
-
 	// Perform directional lighting on the objects.
-	float lambert = max( 0.0, dot( normalize( vNormal ), vec3( 0, 0, 1) ) );
-	fColor.rgb *= lambert;
+	const vec3 L = vec3( 0.5, 1, 1 );
+	float lambert = max( 0.0, dot( normalize( vNormal ), L ) );
+	fColor = vec4( vColor.rgb * lambert, 1.0 );
 }
