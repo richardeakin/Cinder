@@ -60,7 +60,7 @@ class MotionBlurVelocityBufferApp : public App {
 
 	gl::GlslProgRef	mVelocityRenderProg;		// Debug rendering of velocity to screen.
 
-	gl::FboRef		mGBuffer;					// Full-resolution RGBA color and velocity.
+	gl::FboRef		mGBuffer;					// Full-resolution RGB color and velocity.
 	gl::FboRef		mVelocityDilationBuffer;	// Dilated, downsampled velocity and dominant region velocities.
 	// Name our framebuffer attachment points.
 	const GLenum G_COLOR				= GL_COLOR_ATTACHMENT0;
@@ -153,7 +153,7 @@ void MotionBlurVelocityBufferApp::createBuffers()
 	const int tileWidth = bufferWidth / mTileSize;
 	const int tileHeight = bufferHeight / mTileSize;
 
-	auto colorFormat = gl::Texture::Format().internalFormat( GL_RGBA );
+	auto colorFormat = gl::Texture::Format().internalFormat( GL_RGB );
 	auto velocityFormat = gl::Texture::Format().internalFormat( GL_RG16F );
 	auto colorBuffer = gl::Texture::create( bufferWidth, bufferHeight, colorFormat );
 	auto velocityBuffer = gl::Texture::create( bufferWidth, bufferHeight, velocityFormat );
@@ -229,8 +229,7 @@ void MotionBlurVelocityBufferApp::fillGBuffer()
 	gl::enableDepthWrite();
 
 	gl::ScopedFramebuffer fbo( mGBuffer );
-	gl::ScopedBlendAlpha blend;
-	gl::clear( ColorA( 0.0f, 0.0f, 0.0f, 0.0f ) );
+	gl::clear( ColorA( 0, 0, 0, 0 ) );
 
 	gl::ScopedViewport viewport( mGBuffer->getSize() );
 	gl::ScopedMatrices matrices;
@@ -323,8 +322,6 @@ void MotionBlurVelocityBufferApp::draw()
 	fillGBuffer();
 
 	if( ! mBlurEnabled ) {
-
-		gl::ScopedBlendAlpha blend;
 		gl::draw( mGBuffer->getColorTexture() );
 	}
 	else {
