@@ -79,7 +79,7 @@ class MotionBlurVelocityBufferApp : public App {
 
 	int						mTileSize = 20;		// TileMax program samples a TileSize x TileSize region of pixels for each of its output pixels.
 	int						mSampleCount = 31;	// Number of samples used when calculating motion blur. Low-movement areas skip calculation.
-	float					mAnimationSpeed = 0.0f;
+	float					mAnimationSpeed = 1.0f;
 	float					mBlurNoise = 0.0f;
 	bool					mBlurEnabled = true;
 	bool					mPaused = false;
@@ -264,9 +264,7 @@ void MotionBlurVelocityBufferApp::dilateVelocity()
 	gl::ScopedFramebuffer fbo( mVelocityDilationBuffer );
 	gl::ScopedViewport viewport( ivec2( 0, 0 ), mVelocityDilationBuffer->getSize() );
 	gl::ScopedMatrices	matrices;
-	//gl::setMatricesWindowPersp( mVelocityDilationBuffer->getSize() );
-	gl::setMatrices( mCam );
-
+	gl::setMatricesWindow( mVelocityDilationBuffer->getSize() );
 
 	{ // downsample velocity into tilemax
 		gl::ScopedTextureBind tex( mGBuffer->getTexture2d( G_VELOCITY ), 0 );
@@ -312,10 +310,7 @@ void MotionBlurVelocityBufferApp::draw()
 	mCpuTimer.start();
 
 	gl::clear( Color( 0, 0, 0 ) );
-	gl::ScopedMatrices matrices;
-	gl::setMatricesWindowPersp( getWindowSize(), 60.0f, 1.0f, 5000.0f );
-	gl::ScopedViewport viewport( vec2(0), getWindowSize() );
-	gl::ScopedBlend blend(false);
+	gl::ScopedBlend blend( false );
 
 	//gl::draw( mBackground, getWindowBounds() );
 
