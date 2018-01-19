@@ -21,6 +21,6 @@ void main(void)
 
 	// Perform directional lighting on the objects.
 	const vec3 L = vec3( 0.5, 1, 1 );
-	float lambert = max( 0.0, dot( normalize( vNormal ), L ) );
-	fColor = vec4( vColor.rgb * lambert, 1.0 );
+	float lambert = max( 0.0, dot( normalize( vNormal ), normalize( L ) ) );
+	fColor = vec4( vColor.rgb * lambert + vColor.rgb * 0.1, 1.0 );
 }
