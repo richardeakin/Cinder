@@ -49,10 +49,10 @@
 	#define HAVE_AUDIO_CLIENT_3
 #endif
 
-//#define LOG_XRUN( stream )	CI_LOG_I( stream )
-#define LOG_XRUN( stream )	    ( (void)( 0 ) )
-//#define LOG_AUDIOCLIENT( stream )	CI_LOG_I( stream )
-#define LOG_AUDIOCLIENT( stream )	    ( (void)( 0 ) )
+#define LOG_XRUN( stream )	CI_LOG_I( stream )
+//#define LOG_XRUN( stream )	    ( (void)( 0 ) )
+#define LOG_AUDIOCLIENT( stream )	CI_LOG_I( stream )
+//#define LOG_AUDIOCLIENT( stream )	    ( (void)( 0 ) )
 #define ASSERT_HR_OK( hr ) CI_ASSERT_MSG( hr == S_OK, hresultToString( hr ) )
 
 using namespace std;
@@ -250,7 +250,7 @@ bool WasapiAudioClientImpl::tryInit( ::REFERENCE_TIME requestedDuration, const :
 		}
 	}
 	else if( hr == E_INVALIDARG ) {
-		CI_LOG_W( "Initialize attempt failed with E_INVALIDARG. It's likely that this format isn't actually supported, so skipping it. WAVEFORMATEX: " << waveFormatToString( format ) );
+		CI_LOG_W( "Initialize attempt unsuccessful with E_INVALIDARG. It's likely that this format isn't actually supported, so skipping it. WAVEFORMATEX: " << waveFormatToString( format ) );
 		createAudioClient( immDevice ); // throw away the current IAudioClient and create a new one
 		return false;
 	}
@@ -663,8 +663,8 @@ void WasapiCaptureClientImpl::captureAudio()
 		return;
 	}
 	else {
-		//ASSERT_HR_OK( hr );
-		CI_ASSERT( hr == S_OK );
+		ASSERT_HR_OK( hr );
+		//CI_ASSERT( hr == S_OK );
 	}
 
 	while( numPacketFrames ) {
@@ -742,14 +742,18 @@ void WasapiCaptureClientImpl::captureAudio()
 OutputDeviceNodeWasapi::OutputDeviceNodeWasapi( const DeviceRef &device, bool exclusiveMode, const Format &format )
 	: OutputDeviceNode( device, format ), mRenderImpl( new WasapiRenderClientImpl( this, exclusiveMode ) )
 {
+	CI_LOG_I( "this: " << hex << this << dec );
 }
 
 OutputDeviceNodeWasapi::~OutputDeviceNodeWasapi()
 {
+	CI_LOG_I( "this: " << hex << this << dec );
 }
 
 void OutputDeviceNodeWasapi::initialize()
 {
+	CI_LOG_I( "this: " << hex << this << dec );
+
 	if( mRenderImpl->mAudioClient && mRenderImpl->mRenderClient ) {
 		// Avoid extra hardware initialization, this can happen when we re-initializes the entire
 		// graph because the frames per block had to be changed

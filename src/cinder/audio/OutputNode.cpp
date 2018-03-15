@@ -26,6 +26,8 @@
 #include "cinder/audio/Utilities.h"
 #include "cinder/audio/Exception.h"
 
+#include "cinder/Log.h"
+
 #include <string>
 
 using namespace std;
@@ -113,6 +115,8 @@ OutputDeviceNode::OutputDeviceNode( const DeviceRef &device, const Format &forma
 
 void OutputDeviceNode::deviceParamsWillChange()
 {
+	CI_LOG_I( "device: " << getDevice()->getName() << ", frames per block: " << getOutputFramesPerBlock() << ", samplerate: " << getOutputSampleRate() );
+
 	mWasEnabledBeforeParamsChange = isEnabled();
 
 	getContext()->disable();
@@ -121,6 +125,8 @@ void OutputDeviceNode::deviceParamsWillChange()
 
 void OutputDeviceNode::deviceParamsDidChange()
 {
+	CI_LOG_I( "device: " << getDevice()->getName() << ", frames per block: " << getOutputFramesPerBlock() << ", samplerate: " << getOutputSampleRate() );
+
 	getContext()->initializeAllNodes();
 
 	getContext()->setEnabled( mWasEnabledBeforeParamsChange );

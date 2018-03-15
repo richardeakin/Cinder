@@ -20,9 +20,9 @@
 #include "../../../../samples/_audio/common/AudioDrawUtils.h"
 
 const bool USE_SECONDARY_SCREEN = true;
-const bool WASAPI_EXCLUSIVE_MODE = false;
-const bool SET_FRAMES_PER_BLOCK = false;
-const size_t FRAMES_PER_BLOCK = 160;
+const bool WASAPI_EXCLUSIVE_MODE = true;
+const bool SET_FRAMES_PER_BLOCK = true;
+const size_t FRAMES_PER_BLOCK = 256; // 160
 const double RECORD_SECONDS = 4.0;
 
 using namespace ci;
@@ -114,7 +114,7 @@ void DeviceTestApp::setup()
 	mGain >> mRecorder;
 
 	setupUI();
-//	setupTest( mTestSelector.currentSection() );
+	//setupTest( mTestSelector.currentSection() );
 
 //	setupInputPulled();
 	setupIOClean();

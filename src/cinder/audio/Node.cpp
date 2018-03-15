@@ -30,6 +30,8 @@
 #include "cinder/CinderAssert.h"
 #include "cinder/System.h"
 
+#include "cinder/Log.h"
+
 #include <limits>
 
 using namespace std;
@@ -262,6 +264,8 @@ void Node::initializeImpl()
 	if( mInitialized )
 		return;
 
+	CI_LOG_I( "this node: " << getName() );
+
 	if( mProcessInPlace && ! supportsProcessInPlace() )
 		setupProcessWithSumming();
 
@@ -280,6 +284,8 @@ void Node::uninitializeImpl()
 {
 	if( ! mInitialized )
 		return;
+
+	CI_LOG_I( "this node: " << getName() );
 
 	if( mAutoEnabled )
 		disable();
