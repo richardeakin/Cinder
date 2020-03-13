@@ -128,7 +128,7 @@ class Message {
 	//! Returns the type \a T located at \a index. If index is out of bounds, throws ExcIndexOutOfBounds.
 	//! If argument isn't convertible to this type, throws ExcNonConvertible
 	template <typename T>
-	T			getArg( uint32_t index );
+	T			getArg( uint32_t index ) const;
 	//! Returns the int32_t located at \a index. If index is out of bounds, throws ExcIndexOutOfBounds.
 	//! If argument isn't convertible to this type, throws ExcNonConvertible
 	int32_t		getArgInt32( uint32_t index ) const;
@@ -368,14 +368,14 @@ class Message {
 	};
 };
 
-template<> inline int32_t Message::getArg( uint32_t index ) { return getArgInt32( index ); }
-template<> inline float Message::getArg( uint32_t index ) { return getArgFloat( index ); }
-template<> inline std::string Message::getArg( uint32_t index ) { return getArgString( index ); }
-template<> inline ci::Buffer Message::getArg( uint32_t index ) { return getArgBlob( index ); }
-template<> inline int64_t Message::getArg( uint32_t index ) { return getArgInt64( index ); }
-template<> inline double Message::getArg( uint32_t index ) { return getArgDouble( index ); }
-template<> inline char Message::getArg( uint32_t index ) { return getArgChar( index ); }
-template<> inline bool Message::getArg( uint32_t index ) { return getArgBool( index ); }
+template<> inline int32_t Message::getArg( uint32_t index ) const		{ return getArgInt32( index ); }
+template<> inline float Message::getArg( uint32_t index ) const			{ return getArgFloat( index ); }
+template<> inline std::string Message::getArg( uint32_t index ) const	{ return getArgString( index ); }
+template<> inline ci::Buffer Message::getArg( uint32_t index ) const	{ return getArgBlob( index ); }
+template<> inline int64_t Message::getArg( uint32_t index ) const		{ return getArgInt64( index ); }
+template<> inline double Message::getArg( uint32_t index ) const		{ return getArgDouble( index ); }
+template<> inline char Message::getArg( uint32_t index ) const			{ return getArgChar( index ); }
+template<> inline bool Message::getArg( uint32_t index ) const			{ return getArgBool( index ); }
 
 //! Convenient stream operator for Message
 std::ostream& operator<<( std::ostream &os, const Message &rhs );
