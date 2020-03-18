@@ -866,7 +866,8 @@ void Message::clear()
 std::ostream& operator<<( std::ostream &os, const Message &rhs )
 {
 	os << "Address: " << rhs.getAddress() << std::endl;
-	if( ! rhs.getSenderIpAddress().is_unspecified() )
+	const auto &ip = rhs.getSenderIpAddress();
+	if( ! ip.is_unspecified() && ( ip.is_v4() || ip.is_v6() ) )
 		os << "Sender Ip Address: " << rhs.getSenderIpAddress() << " Port: " << rhs.getSenderPort() << std::endl;
 	for( auto &dataView : rhs.mDataViews )
 		os << "\t" << dataView << std::endl;
