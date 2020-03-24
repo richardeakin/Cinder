@@ -1134,6 +1134,18 @@ void ReceiverBase::removeListener( const std::string &address )
 		mListeners.erase( foundListener );
 }
 
+void ReceiverBase::removeAllListeners()
+{
+	std::lock_guard<std::mutex> lock( mListenerMutex );
+	mListeners.clear();
+}
+
+ReceiverBase::Listeners ReceiverBase::getListeners() const
+{
+	std::lock_guard<std::mutex> lock( mListenerMutex );
+	return mListeners;
+}
+
 void ReceiverBase::dispatchMethods( uint8_t *data, uint32_t size, const asio::ip::address &senderIpAddress, uint16_t senderPort )
 {
 	std::vector<Message> messages;
