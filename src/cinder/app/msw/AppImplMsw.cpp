@@ -546,6 +546,16 @@ void WindowImplMsw::show()
 	mHidden = false;
 }
 
+void WindowImplMsw::maximize()
+{
+	::ShowWindow( mWnd, SW_MAXIMIZE );
+}
+
+void WindowImplMsw::restore()
+{
+	::ShowWindow( mWnd, SW_RESTORE );
+}
+
 bool WindowImplMsw::isHidden() const
 {
 	return mHidden;

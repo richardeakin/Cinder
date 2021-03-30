@@ -123,6 +123,8 @@ class WindowImplMsw {
 	virtual void		setTitle( const std::string &title );
 	virtual void		hide();
 	virtual void		show();
+	virtual void		maximize();
+	virtual void		restore();
 	virtual bool		isHidden() const;
 	virtual DisplayRef	getDisplay() const { return mDisplay; }
 	virtual RendererRef	getRenderer() const { return mRenderer; }

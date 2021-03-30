@@ -343,6 +343,10 @@ class CI_API Window : public std::enable_shared_from_this<Window> {
 	void	show();
 	//! Returns whether the window has been hidden with \a hide()
 	bool	isHidden() const;
+	//!
+	void	maximize();
+	//!
+	void	restore();
 
 	//! Closes and destroys the Window
 	void	close();

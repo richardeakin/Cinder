@@ -243,6 +243,28 @@ bool Window::isHidden() const
 #endif	
 }
 
+void Window::maximize()
+{
+	testValid();
+
+#if defined( CINDER_COCOA )
+	//[mImpl maximize]; // TODO
+#else
+	mImpl->maximize();
+#endif
+}
+
+void Window::restore()
+{
+	testValid();
+
+#if defined( CINDER_COCOA )
+	//[mImpl restore]; // TODO
+#else
+	mImpl->restore();
+#endif
+}
+
 DisplayRef Window::getDisplay() const
 {
 	testValid();
